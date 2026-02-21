@@ -1,0 +1,34 @@
+<div id="table"></div>
+
+<script src="data.js"></script>
+
+<script>
+  // Get the daily streamflow records
+  var rows = data.value.timeSeries[0].values[0].value;
+
+  var table = "<table border='1'>";
+  table += "<tr><th>Date</th><th>Flow</th></tr>";
+
+  for (var i = 0; i < rows.length; i++) {
+
+    var date = rows[i].dateTime;
+    var flow = rows[i].value;
+
+    var color = "white";
+
+    if (flow < 500) {
+      color = "lightblue";
+    } else {
+      color = "lightgreen";
+    }
+
+    table += "<tr>";
+    table += "<td>" + date + "</td>";
+    table += "<td style='background:" + color + "'>" + flow + "</td>";
+    table += "</tr>";
+  }
+
+  table += "</table>";
+
+  document.getElementById("table").innerHTML = table;
+</script>
