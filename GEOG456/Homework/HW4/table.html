@@ -24,7 +24,7 @@
       var date = rows[i].dateTime;
       var flow = Number(rows[i].value);
 
-      var color = (flow < 500) ? "blue" : "green";
+      var color = (flow < 500) ? "lightblue" : "green";
 
       table += "<tr><td>" + date + "</td><td style='background:" + color + "'>" + flow + "</td></tr>";
     }
