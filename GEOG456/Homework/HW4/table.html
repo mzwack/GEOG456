@@ -1,0 +1,35 @@
+<div id="table"></div>
+
+<script src="data.js"></script>
+
+<script>
+  var rows = null;
+
+  for (var s = 0; s < data.value.timeSeries.length; s++) {
+    var ts = data.value.timeSeries[s];
+
+    if (ts.values && ts.values[0] && ts.values[0].value && ts.values[0].value.length > 0) {
+      rows = ts.values[0].value;
+      break;
+    }
+  }
+
+  if (!rows) {
+    document.getElementById("table").innerHTML = "No data rows found (check Console).";
+    console.log("timeSeries objects:", data.value.timeSeries);
+  } else {
+    var table = "<table border='1'><tr><th>Date</th><th>Flow</th></tr>";
+
+    for (var i = 0; i < rows.length; i++) {
+      var date = rows[i].dateTime;
+      var flow = Number(rows[i].value);
+
+      var color = (flow < 500) ? "lightblue" : "lightgreen";
+
+      table += "<tr><td>" + date + "</td><td style='background:" + color + "'>" + flow + "</td></tr>";
+    }
+
+    table += "</table>";
+    document.getElementById("table").innerHTML = table;
+  }
+</script>
