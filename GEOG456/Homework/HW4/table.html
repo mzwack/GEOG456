@@ -18,7 +18,7 @@
     document.getElementById("table").innerHTML = "No data rows found (check Console).";
     console.log("timeSeries objects:", data.value.timeSeries);
   } else {
-    var table = "<table border='1'><tr><th>Date</th><th>Flow</th></tr>";
+    var table = "<table border='1'><tr><th>Date</th><th>Flow (cfs)</th></tr>";
 
     for (var i = 0; i < rows.length; i++) {
       var date = rows[i].dateTime;
