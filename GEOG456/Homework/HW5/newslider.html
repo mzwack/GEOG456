@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet with Slider</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
+    integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=="
+    crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"
+    integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=="
+    crossorigin=""></script>
+
+    <script src="slr_data.js"></script>
+    <script>
+    var slr = slr_data;
+    </script>
+
+    <style>
+        h1 {
+        font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+        font-size: 36px;
+        position: relative;
+        top: 10%;
+        text-align: center;
+        outline-style: ridge;
+        -webkit-text-stroke-width: 1px;
+        }
+        h2 {
+            font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+        }
+        h3 {
+            font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+        }
+        .legend {
+            line-height: 18px;
+            color: #000;
+            background-color: #ffffff;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7; 
+        }
+        #map { height: 400px;
+            width: 900px;
+            background-color: lightslategray;
+            text-align: center; 
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Projected sea-level rise over time in North Carolina</h1>
+
+    <h2 id="theYear">Year</h2>
+
+    <input type="range" name="year" value="2020" min="2020" max="2050" step="10" oninput="moveSlider(this.value)">
+    <div id="map"></div>
+    <div class="legend"></div>
+
+    <script>
+
+        var map = L.map('map').setView([35.5, -79.0], 7);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        var selectedYear = 'RSL2020__c';
+
+        function myStyle(feature) {
+            return {
+                "fillColor": getColor(feature.properties[selectedYear]),
+                "color": "black",
+                "weight": 0.75,
+                "opacity": 2.0,
+                "fillOpacity": 0.7
+            }
+        };
+
+        function getColor(slrValue) {
+            return slrValue < 0.5 ? "#f7fbff"
+            : slrValue < 1.0 ? "#9ecae1"
+            : slrValue < 2.0 ? "#4292c6"
+            : "#08306b";
+        };
+
+        var slrLayer = L.geoJSON(slr, {style: myStyle}).addTo(map);
+
+        function moveSlider(value) {
+            selectedYear = 'RSL' + value + '__c';
+
+            map.removeLayer(slrLayer);
+            slrLayer = L.geoJSON(slr, {style: myStyle});
+            map.addLayer(slrLayer);
+
+            document.getElementById('theYear').innerHTML = 'Year: ' + value;
+        }
+        moveSlider('2020');
+
+        var legend = L.control({position: 'bottomright'});
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info legend'),
+                grades = [0, 0.5, 1.0, 2.0],
+                labels = [];
+
+            for (var i = 0; i < grades.length; i++) {
+                div.innerHTML +=
+                    '<i style="background:' + getColor(grades[i] + 0.0001) + '"></i> ' +
+                    grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+            }
+            return div;
+        };
+        legend.addTo(map);
+
+        var legendTitle = L.control({position: 'bottomright'});
+        legendTitle.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info');
+            this.update();
+            return this._div;
+        };
+
+        legendTitle.update = function (props) {
+            this._div.innerHTML = '<h3><u>Sea Level Rise (ft)</u></h3>';
+        };
+        legendTitle.addTo(map);
+    </script>
+</body>
+</html>
