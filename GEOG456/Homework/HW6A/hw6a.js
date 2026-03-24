@@ -1,18 +1,20 @@
 // You need to create a geometry, otherwise this will not work. 
 
-var yearBefore = '2012'
+// You need to create a geometry, otherwise this will not work. 
+
+var yearBefore = '2013'
 var yearAfter = '2020'
 
 // var dataset = ee.ImageCollection('USDA/NAIP/DOQQ')
 //                   .filter(ee.Filter.date('2017-01-01', '2018-12-31'));
 
 var datasetBefore = ee.ImageCollection('USDA/NAIP/DOQQ')
-                  .filter(ee.Filter.bounds(geometry))
-                  .filter(ee.Filter.date(yearBefore +'-01-01', yearBefore+'-12-31'))
+  .filterBounds(geometry)
+  .filterDate('2013-01-01', '2016-12-31');
 
 var datasetAfter = ee.ImageCollection('USDA/NAIP/DOQQ')
-                  .filter(ee.Filter.bounds(geometry))
-                  .filter(ee.Filter.date(yearAfter +'-01-01', yearAfter+'-12-31'))
+  .filterBounds(geometry)
+  .filterDate('2020-01-01', '2020-12-31');
 
 
 // var trueColor = dataset.select(['R', 'G', 'B']);
@@ -84,3 +86,18 @@ Map.setCenter(-105.92901472945381, 35.67653518090711, 15);
 Map.addLayer(aftImg, trueColorVis, yearAfter);
 Map.addLayer(befImg, trueColorVis, yearBefore);
 Map.addLayer(result, trueColorVis, 'Histogram Matched' + yearBefore);
+
+Export.image.toDrive({
+  image: aftImg,
+  description: yearAfter,
+  scale: 0.6,
+  region: geometry
+})
+
+Export.image.toDrive({
+  image: result,
+  description: 'Histogram Matched' + yearBefore ,
+  scale: 1,
+  region: geometry,
+  maxPixels: 1e13
+})
