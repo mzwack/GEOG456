@@ -1,0 +1,15 @@
+{
+"type": "FeatureCollection",
+"name": "PWHL_table",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "Team": "Boston Fleet", "Stadium": "Tsongas Center", "Latitude": 42.64985, "Longitude": -71.31318, "Logo_url": "https://assets.leaguestat.com/pwhl/logos/1_5.png" }, "geometry": { "type": "Point", "coordinates": [ -71.31318, 42.64985 ] } },
+{ "type": "Feature", "properties": { "Team": "Minnesota Frost", "Stadium": "Grand Casino Arena", "Latitude": 44.94501, "Longitude": -93.1012, "Logo_url": "https://assets.leaguestat.com/pwhl/logos/2_5.png" }, "geometry": { "type": "Point", "coordinates": [ -93.1012, 44.94501 ] } },
+{ "type": "Feature", "properties": { "Team": "Montréal Victoire", "Stadium": "Place Bell", "Latitude": 45.55632, "Longitude": -73.72121, "Logo_url": "https://assets.leaguestat.com/pwhl/logos/3_5.png" }, "geometry": { "type": "Point", "coordinates": [ -73.72121, 45.55632 ] } },
+{ "type": "Feature", "properties": { "Team": "New York Sirens", "Stadium": "Prudential Center", "Latitude": 40.7338, "Longitude": -74.17065, "Logo_url": "https://assets.leaguestat.com/pwhl/logos/4_5.png" }, "geometry": { "type": "Point", "coordinates": [ -74.17065, 40.7338 ] } },
+{ "type": "Feature", "properties": { "Team": "Ottawa Charge", "Stadium": "TD Place Arena", "Latitude": 45.39854, "Longitude": -75.68353, "Logo_url": "https://assets.leaguestat.com/pwhl/logos/5_5.png" }, "geometry": { "type": "Point", "coordinates": [ -75.68353, 45.39854 ] } },
+{ "type": "Feature", "properties": { "Team": "Seattle Torrent", "Stadium": "Climate Pledge Arena", "Latitude": 47.62231, "Longitude": -122.35357, "Logo_url": "https://upload.wikimedia.org/wikipedia/en/6/6c/Seattle_Torrent_logo.png" }, "geometry": { "type": "Point", "coordinates": [ -122.35357, 47.62231 ] } },
+{ "type": "Feature", "properties": { "Team": "Toronto Sceptres", "Stadium": "Coca-Cola Coliseum", "Latitude": 43.63504, "Longitude": -79.41528, "Logo_url": "https://assets.leaguestat.com/pwhl/logos/6_5.png" }, "geometry": { "type": "Point", "coordinates": [ -79.41528, 43.63504 ] } },
+{ "type": "Feature", "properties": { "Team": "Vancouver Goldeneyes", "Stadium": "Pacific Coliseum", "Latitude": 49.28596, "Longitude": -123.04269, "Logo_url": "https://upload.wikimedia.org/wikipedia/en/7/73/Vancouver_Goldeneyes_logo.png" }, "geometry": { "type": "Point", "coordinates": [ -123.04269, 49.28596 ] } }
+]
+}
