@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visualizing Women's Ice Hockey — GEOG 456 Final Project</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ice: #e8f4f8;
+    --rink: #071525;
+    --blue-light: #4eb3d3;
+    --blue-mid: #2b8cbe;
+    --blue-deep: #0868ac;
+    --blue-darkest: #084081;
+    --accent: #c8e6f5;
+    --text: #0a1628;
+    --muted: #5a6a7a;
+    --border: #c5dce8;
+    --surface: #ffffff;
+    --surface-alt: #f4f8fb;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--surface-alt);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  /* ── HERO ── */
+  .sb-hero {
+    background: var(--rink);
+    color: white;
+    padding: 80px 56px 88px;
+    position: relative;
+    overflow: hidden;
+  }
+  .sb-hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 80px),
+      repeating-linear-gradient(0deg,  rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 80px);
+    pointer-events: none;
+  }
+  .sb-eyebrow {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--blue-light);
+    font-weight: 600;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .sb-hero h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 52px;
+    font-weight: 700;
+    line-height: 1.1;
+    max-width: 620px;
+    margin-bottom: 22px;
+    color: #f0f8ff;
+    position: relative;
+    letter-spacing: 0.01em;
+  }
+  .sb-hero h1 em { font-style: normal; color: var(--blue-light); }
+  .sb-hero p {
+    font-size: 17px;
+    line-height: 1.75;
+    color: #8eaabb;
+    max-width: 540px;
+    margin-bottom: 36px;
+    position: relative;
+  }
+  .sb-scroll-hint {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--blue-light);
+    opacity: 0.8;
+    position: relative;
+  }
+  .sb-scroll-hint svg { animation: bounce 1.8s ease-in-out infinite; }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(5px); }
+  }
+
+  /* ── STAT ROW ── */
+  .sb-stat-row {
+    background: #0a1e35;
+    display: flex;
+    border-top: 1px solid rgba(78, 179, 211, 0.2);
+    flex-wrap: wrap;
+  }
+  .sb-stat {
+    flex: 1;
+    min-width: 140px;
+    padding: 22px 32px;
+    border-right: 1px solid rgba(78, 179, 211, 0.12);
+  }
+  .sb-stat:last-child { border-right: none; }
+  .sb-stat-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--blue-light);
+    line-height: 1.1;
+  }
+  .sb-stat-label {
+    font-size: 12px;
+    color: #5a7a8a;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: 'Barlow Condensed', sans-serif;
+  }
+
+  /* ── QUOTE BAND ── */
+  .sb-quote {
+    background: var(--rink);
+    color: white;
+    padding: 64px 56px;
+    border-top: 1px solid rgba(78, 179, 211, 0.2);
+    border-bottom: 1px solid rgba(78, 179, 211, 0.2);
+  }
+  .sb-quote blockquote {
+    max-width: 700px;
+    font-size: 21px;
+    line-height: 1.65;
+    color: #c8dde8;
+    font-style: italic;
+    border-left: 3px solid var(--blue-light);
+    padding-left: 28px;
+    margin-bottom: 18px;
+  }
+  .sb-quote cite {
+    font-size: 13px;
+    color: var(--blue-light);
+    font-style: normal;
+    padding-left: 31px;
+    letter-spacing: 0.04em;
+    display: block;
+  }
+
+  /* ── SECTIONS ── */
+  .sb-section {
+    padding: 64px 56px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sb-section:nth-child(odd)  { background: var(--surface); }
+  .sb-section:nth-child(even) { background: var(--surface-alt); }
+
+  .sb-chapter {
+    display: flex;
+    align-items: flex-start;
+    gap: 48px;
+    max-width: 1100px;
+  }
+  .sb-chapter-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 80px;
+    font-weight: 700;
+    color: var(--border);
+    line-height: 1;
+    min-width: 80px;
+    text-align: right;
+    margin-top: -10px;
+    flex-shrink: 0;
+    border-right: 1.5px solid var(--border);
+    padding-right: 32px;
+  }
+  .sb-chapter-tag {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--blue-light);
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .sb-chapter-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .sb-chapter-body h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 14px;
+    line-height: 1.2;
+    letter-spacing: 0.02em;
+  }
+  .sb-chapter-body > p {
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--muted);
+    max-width: 640px;
+    margin-bottom: 18px;
+  }
+
+  /* ── CARDS ── */
+  .sb-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+    margin-top: 24px;
+    max-width: 560px;
+  }
+  .sb-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .sb-section:nth-child(odd) .sb-card { background: var(--surface-alt); }
+  .sb-card-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  .sb-card-icon.ice  { background: #ddf0f8; }
+  .sb-card-icon.gold { background: #faeeda; }
+  .sb-card-icon.pink { background: #fbeaf0; }
+  .sb-card h4 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 5px;
+    letter-spacing: 0.03em;
+  }
+  .sb-card p { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 0; }
+
+  /* ── FEATURE LIST ── */
+  .sb-feature-list {
+    list-style: none;
+    margin-top: 20px;
+    margin-bottom: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    max-width: 560px;
+  }
+  .sb-feature-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .sb-bullet {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--blue-light);
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+
+  /* ── PWHL MAP LAUNCH CARD ── */
+  .sb-map-launch-card {
+    margin-top: 28px;
+    background: var(--rink);
+    border: 1.5px solid rgba(78,179,211,0.3);
+    border-radius: 14px;
+    overflow: hidden;
+    max-width: 680px;
+  }
+  .sb-map-launch-preview {
+    padding: 28px 28px 20px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    border-bottom: 1px solid rgba(78,179,211,0.15);
+  }
+  .sb-map-launch-icon {
+    flex-shrink: 0;
+    width: 72px; height: 72px;
+    background: rgba(78,179,211,0.08);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(78,179,211,0.2);
+  }
+  .sb-map-launch-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #f0f8ff;
+    letter-spacing: 0.02em;
+    margin-bottom: 4px;
+  }
+  .sb-map-launch-subtitle {
+    font-size: 13px;
+    color: #4a7a8a;
+    margin-bottom: 12px;
+  }
+  .sb-map-launch-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .sb-map-tag {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    background: rgba(78,179,211,0.12);
+    color: var(--blue-light);
+    border-radius: 4px;
+    border: 1px solid rgba(78,179,211,0.25);
+  }
+  .sb-map-launch-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 28px;
+    padding: 14px 24px;
+    background: var(--blue-deep);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: background 0.15s, transform 0.1s;
+    box-shadow: 0 2px 12px rgba(8,104,172,0.35);
+  }
+  .sb-map-launch-btn:hover {
+    background: var(--blue-darkest);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 18px rgba(8,104,172,0.5);
+  }
+  .sb-map-launch-note {
+    padding: 0 28px 20px;
+    font-size: 12px;
+    color: #3a5a6a;
+    line-height: 1.6;
+  }
+  .sb-map-launch-note code {
+    font-family: monospace;
+    background: rgba(78,179,211,0.1);
+    color: var(--blue-light);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+
+  /* ── FOOTER ── */
+  .sb-footer {
+    background: var(--rink);
+    color: #4a6a7a;
+    padding: 32px 56px;
+    font-size: 12px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(78, 179, 211, 0.15);
+  }
+  .sb-footer a { color: var(--blue-light); text-decoration: none; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 680px) {
+    .sb-hero       { padding: 48px 24px 56px; }
+    .sb-hero h1    { font-size: 36px; }
+    .sb-quote      { padding: 40px 24px; }
+    .sb-section    { padding: 48px 24px; }
+    .sb-chapter    { flex-direction: column; gap: 16px; }
+    .sb-chapter-num { font-size: 48px; border-right: none; border-bottom: 1.5px solid var(--border); padding-right: 0; padding-bottom: 10px; text-align: left; }
+    .sb-stat       { padding: 16px 20px; }
+    .sb-footer     { padding: 24px; }
+  }
+
+  /* ════════════════════════════════════════
+     CARTOGRAM COMPONENT
+  ════════════════════════════════════════ */
+  .sb-cartogram-wrapper {
+    margin-top: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .carto-topbar {
+    background: #f0f7fb;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .carto-year-pill {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--blue-darkest);
+    min-width: 52px;
+    letter-spacing: -0.01em;
+  }
+  .carto-play-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    background: var(--blue-deep);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s;
+    white-space: nowrap;
+  }
+  .carto-play-btn:hover { background: var(--blue-darkest); }
+  .carto-slider-wrap {
+    flex: 1;
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .carto-slider-wrap input[type=range] {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  .carto-slider-wrap input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--blue-deep);
+    border: 2px solid white;
+    box-shadow: 0 1px 4px rgba(8,104,172,0.3);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .carto-slider-wrap input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+  .carto-tick-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    pointer-events: none;
+  }
+  .carto-mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .carto-mode-toggle button {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border: none;
+    background: white;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    border-right: 1px solid var(--border);
+  }
+  .carto-mode-toggle button:last-child { border-right: none; }
+  .carto-mode-toggle button.active { background: var(--blue-deep); color: white; }
+  .carto-age-bar {
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: white;
+  }
+  .carto-age-bar button {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 5px 11px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: white;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .carto-age-bar button:hover { border-color: var(--blue-mid); color: var(--blue-deep); }
+  .carto-age-bar button.active { background: var(--blue-deep); color: white; border-color: var(--blue-deep); }
+  .carto-stats-strip {
+    background: #f0f7fb;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+    align-items: baseline;
+  }
+  .carto-stat { display: flex; flex-direction: column; gap: 1px; }
+  .carto-stat-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--blue-darkest);
+    line-height: 1;
+  }
+  .carto-stat-lbl {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+  }
+  .carto-stat-divider { width: 1px; height: 26px; background: var(--border); align-self: center; }
+  .carto-map-area { padding: 20px; background: #f9fcfe; }
+  .carto-map-area svg {
+    width: 100%; height: auto; display: block;
+    background: white; border-radius: 8px; border: 1px solid var(--border);
+  }
+  .carto-legend {
+    padding: 10px 20px 16px;
+    background: white;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .carto-legend-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+  }
+  .carto-legend-bar {
+    height: 7px; width: 140px; border-radius: 3px;
+    background: linear-gradient(to right, #c8e6f5, #4eb3d3, #0868ac, #084081);
+  }
+  .carto-legend-ticks {
+    display: flex;
+    justify-content: space-between;
+    width: 140px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.03em;
+  }
+  .carto-legend-note { font-size: 11px; color: var(--muted); font-style: italic; margin-left: 4px; }
+  #carto-tooltip {
+    position: fixed;
+    background: var(--rink);
+    color: white;
+    padding: 10px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s;
+    z-index: 9999;
+    border: 1px solid rgba(78,179,211,0.25);
+    line-height: 1.6;
+  }
+  #carto-tooltip strong { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; display: block; margin-bottom: 2px; color: white; }
+  #carto-tooltip .tt-rate { color: var(--blue-light); font-weight: 600; }
+  #carto-tooltip .tt-raw  { color: #7aabbf; font-size: 12px; }
+  .state-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px; font-weight: 700; fill: white;
+    text-anchor: middle; dominant-baseline: central;
+    pointer-events: none; letter-spacing: 0.03em;
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="sb-hero">
+  <p class="sb-eyebrow">GEOG 456: Final Project &nbsp;·&nbsp; Hannah, Haley, Miranda</p>
+  <h1>Visualizing Women's Ice Hockey in the United States</h1>
+  <p>A Geospatial Overview of the Sport</p>
+  <div class="sb-scroll-hint">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M7 2v10M3 8l4 4 4-4" stroke="#4eb3d3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Scroll to explore
+  </div>
+</header>
+
+<!-- CHAPTER 0 — Context -->
+<section class="sb-section">
+  <div class="sb-chapter">
+    <div class="sb-chapter-num">00</div>
+    <div class="sb-chapter-body">
+      <p class="sb-chapter-tag">Context</p>
+      <h2>A Background in Women's Ice Hockey</h2>
+      <p>Since women's ice hockey debuted at the 1998 Winter Olympics, the sport has grown dramatically. This growth led to the development of several women's hockey leagues beginning in 1999, and the eventual development of the contemporary Professional Women's Hockey League (PWHL) in 2023. In the following 2024/25 season, USA Hockey reached an all-time high of 577,900 total members, with female participation increasing by 5.1%. Yet recognition of how women and girls contribute to the sport continues to lag, as seen by public discussions surrounding the 2026 Milan-Cortina Olympics.</p>
+      <p>The primary data sources are USA Hockey's annual registration reports, published continuously since 2008 and publicly available through each organization's webpage. As well as Stathletes-tracked women's hockey event data from the Olympics and NCAA and fastRhockey: Functions to Access Professional Women's Hockey League and National Hockey League Play by Play Data.</p>
+      <div class="sb-card-grid">
+        <div class="sb-card">
+          <div class="sb-card-icon ice">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="7" stroke="#2b8cbe" stroke-width="1.5"/>
+              <path d="M9 2v14M2 9h14M4.5 4.5l9 9M13.5 4.5l-9 9" stroke="#2b8cbe" stroke-width="1"/>
+            </svg>
+          </div>
+          <h4>USA Hockey data</h4>
+          <p>Annual registration reports, 2008–present, by state and age group</p>
+        </div>
+        <div class="sb-card">
+          <div class="sb-card-icon gold">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 2l1.8 4 4.2.6-3 3 .7 4.2L9 11.8 5.3 13.8l.7-4.2-3-3 4.2-.6z" stroke="#BA7517" stroke-width="1.3" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h4>PWHL rosters</h4>
+          <p>Player stats, franchise locations, and play-by-play</p>
+        </div>
+        <div class="sb-card">
+          <div class="sb-card-icon pink">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="7" cy="7" r="4" stroke="#993556" stroke-width="1.3"/>
+              <circle cx="13" cy="12" r="3" stroke="#D4537E" stroke-width="1.3"/>
+            </svg>
+          </div>
+          <h4>2022 Winter Olympics</h4>
+          <p>Stathletes-tracked women's hockey event data from the Olympics and NCAA.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHAPTER 01 — Registration Cartograms -->
+<section class="sb-section">
+  <div class="sb-chapter">
+    <div class="sb-chapter-num">01</div>
+    <div class="sb-chapter-body">
+      <p class="sb-chapter-tag">Visualization 1</p>
+      <h2>Registration of Women and Girls by State</h2>
+      <p>This cartogram maps the geographic spread of female hockey participation across the United States, drawing on USA Hockey's annual registration reports from 2007 through 2024. Each state is represented as a bubble sized and shaded in proportion to its registration count. The cartogram style allows registration density to be immediately visible to users in a way traditional maps do not. The timeline slider allows viewers to animate three decades of growth, watching the sport's registration numbers change year by year. Toggling between total registrations and a per-100k residents adjusts for state population, exposing where women's hockey has genuinely grown versus where raw numbers simply reflect a large underlying population.</p>
+
+      <div class="sb-cartogram-wrapper">
+        <!-- TOP BAR -->
+        <div class="carto-topbar">
+          <button class="carto-play-btn" id="carto-play">&#9654; Play</button>
+          <div class="carto-slider-wrap">
+            <input type="range" id="carto-yr-slider" min="0" max="17" step="1" value="17">
+            <div class="carto-tick-row">
+              <span>2007</span><span>2010</span><span>2013</span><span>2016</span><span>2019</span><span>2022</span><span>2024</span>
+            </div>
+          </div>
+          <span class="carto-year-pill" id="carto-year-label">2024</span>
+        </div>
+
+        <!-- AGE GROUP BUTTONS -->
+        <div class="carto-age-bar" id="carto-age-bar">
+          <button class="active" data-age="total" onclick="setAge(this)">Total</button>
+          <button data-age="20_plus" onclick="setAge(this)">20 &amp; Over</button>
+          <button data-age="19" onclick="setAge(this)">19</button>
+          <button data-age="17_18" onclick="setAge(this)">17–18</button>
+          <button data-age="15_16" onclick="setAge(this)">15–16</button>
+          <button data-age="13_14" onclick="setAge(this)">13–14</button>
+          <button data-age="11_12" onclick="setAge(this)">11–12</button>
+          <button data-age="9_10" onclick="setAge(this)">9–10</button>
+          <button data-age="7_8" onclick="setAge(this)">7–8</button>
+          <button data-age="6u" onclick="setAge(this)">6 &amp; Under</button>
+        </div>
+
+        <!-- STATS STRIP -->
+        <div class="carto-stats-strip">
+          <div class="carto-stat">
+            <span class="carto-stat-val" id="cs-total">—</span>
+            <span class="carto-stat-lbl" id="cs-total-lbl">Total registrations</span>
+          </div>
+          <div class="carto-stat-divider"></div>
+          <div class="carto-mode-toggle" style="align-self:center;">
+            <button id="btn-raw" class="active" onclick="setMode('raw',this)">Total</button>
+            <button id="btn-norm" onclick="setMode('norm',this)">Per 100k</button>
+          </div>
+        </div>
+
+        <!-- MAP -->
+        <div class="carto-map-area">
+          <svg id="carto-svg" viewBox="0 0 900 506"></svg>
+        </div>
+
+        <!-- LEGEND -->
+        <div class="carto-legend">
+          <span class="carto-legend-label">Scale:</span>
+          <div>
+            <div class="carto-legend-bar"></div>
+            <div class="carto-legend-ticks">
+              <span>Low</span><span id="leg-mid">Mid</span><span>Peak</span>
+            </div>
+          </div>
+          <span class="carto-legend-note" id="leg-note">Bubble size = total registrations · Color = intensity</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHAPTER 02 — PWHL Map -->
+<section class="sb-section">
+  <div class="sb-chapter">
+    <div class="sb-chapter-num">02</div>
+    <div class="sb-chapter-body">
+      <p class="sb-chapter-tag">Visualization 2</p>
+      <h2>PWHL Franchise Map and Player Data</h2>
+      <p>The Professional Women's Hockey League launched in 2024 with 6 teams and expanded to 8 in 2025. This interactive map shows each team's home stadium location, choropleth shading by player origin (U.S. state or Canadian province), and full 2025–26 roster details.</p>
+      <p>The choropleth layer reveals a clear geographic concentration of talent — particularly in Ontario and Minnesota — that mirrors the registration growth patterns shown in Visualization 1.</p>
+      <ul class="sb-feature-list">
+        <li><span class="sb-bullet"></span><span>Click any team logo marker to open a full roster popup with stats</span></li>
+        <li><span class="sb-bullet"></span><span>Hover any state or province to see how many PWHL players come from there</span></li>
+        <li><span class="sb-bullet"></span><span>International players are listed separately within each team popup</span></li>
+        <li><span class="sb-bullet"></span><span>Coaching staff including GM, Head Coach, and Assistants for all 8 teams</span></li>
+      </ul>
+
+      <!-- PWHL Map launch card -->
+      <div class="sb-map-launch-card">
+        <div class="sb-map-launch-preview">
+        <div class="sb-map-launch-info">
+            <div class="sb-map-launch-title">PWHL Interactive Map</div>
+            <div class="sb-map-launch-subtitle">2025–26 Season · 8 Teams · Full Roster Data</div>
+            <div class="sb-map-launch-tags">
+              <span class="sb-map-tag">Choropleth by player origin</span>
+              <span class="sb-map-tag">Roster popups</span>
+              <span class="sb-map-tag">Stats &amp; coaching staff</span>
+            </div>
+          </div>
+        </div>
+        <a href="pwhl_map_standalone.html" target="_blank" class="sb-map-launch-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8h10M8 3l5 5-5 5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Open Interactive Map
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHAPTER 03 — Play-by-Play -->
+<section class="sb-section">
+  <div class="sb-chapter">
+    <div class="sb-chapter-num">03</div>
+    <div class="sb-chapter-body">
+      <p class="sb-chapter-tag">Visualization 3</p>
+      <h2>Shots on Goal in PWHL and Olympic Games</h2>
+      <a href="https://haleyelis.github.io/GEOG456/Final/Data/Draft.html"
+         target="_blank"
+         style="
+           display:inline-block;
+           margin-top:20px;
+           padding:10px 18px;
+           background:#0868ac;
+           color:white;
+           text-decoration:none;
+           border-radius:6px;
+           font-family:'Barlow Condensed', sans-serif;
+           font-weight:700;
+           letter-spacing:0.05em;
+           text-transform:uppercase;
+           font-size:13px;
+         ">
+        View Interactive Visualization →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="sb-footer">
+  <span>Data: USA Hockey Annual Registration Reports &nbsp;·&nbsp; Hockey Canada &nbsp;·&nbsp; PWHL via QuantHockey &amp; fastRhockey</span>
+  <span>GEOG 456 Geovisualization &nbsp;·&nbsp; 2025–26</span>
+</footer>
+
+<!-- TOOLTIP -->
+<div id="carto-tooltip"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CARTOGRAM DATA & LOGIC (Visualization 1 — unchanged from original)
+// ═══════════════════════════════════════════════════════════════
+const AGE_DATA = {"2007":{"AK":{"total":1685,"20_plus":787,"19":7,"17_18":59,"15_16":83,"13_14":161,"11_12":173,"9_10":172,"7_8":119,"6u":124},"AL":{"total":63,"20_plus":17,"19":2,"17_18":1,"15_16":5,"13_14":9,"11_12":6,"9_10":9,"7_8":11,"6u":3},"AR":{"total":17,"20_plus":7,"19":0,"17_18":1,"15_16":2,"13_14":1,"11_12":3,"9_10":1,"7_8":0,"6u":2},"AZ":{"total":285,"20_plus":106,"19":3,"17_18":10,"15_16":33,"13_14":26,"11_12":46,"9_10":30,"7_8":18,"6u":13},"CA":{"total":1349,"20_plus":775,"19":28,"17_18":65,"15_16":87,"13_14":110,"11_12":98,"9_10":92,"7_8":67,"6u":27},"CO":{"total":2031,"20_plus":1019,"19":21,"17_18":82,"15_16":152,"13_14":217,"11_12":182,"9_10":159,"7_8":125,"6u":74},"CT":{"total":2129,"20_plus":274,"19":12,"17_18":98,"15_16":232,"13_14":333,"11_12":363,"9_10":307,"7_8":270,"6u":240},"DC":{"total":101,"20_plus":48,"19":5,"17_18":5,"15_16":3,"13_14":10,"11_12":12,"9_10":8,"7_8":9,"6u":1},"DE":{"total":57,"20_plus":38,"19":1,"17_18":4,"15_16":3,"13_14":4,"11_12":2,"9_10":4,"7_8":1,"6u":0},"FL":{"total":602,"20_plus":328,"19":8,"17_18":31,"15_16":41,"13_14":49,"11_12":62,"9_10":48,"7_8":23,"6u":12},"GA":{"total":127,"20_plus":55,"19":1,"17_18":5,"15_16":11,"13_14":12,"11_12":12,"9_10":11,"7_8":12,"6u":8},"HI":{"total":3,"20_plus":2,"19":0,"17_18":0,"15_16":0,"13_14":1,"11_12":0,"9_10":0,"7_8":0,"6u":0},"IA":{"total":184,"20_plus":34,"19":2,"17_18":12,"15_16":22,"13_14":16,"11_12":27,"9_10":18,"7_8":21,"6u":32},"ID":{"total":448,"20_plus":222,"19":4,"17_18":17,"15_16":35,"13_14":41,"11_12":43,"9_10":31,"7_8":26,"6u":29},"IL":{"total":1961,"20_plus":419,"19":30,"17_18":130,"15_16":228,"13_14":217,"11_12":278,"9_10":284,"7_8":228,"6u":147},"IN":{"total":306,"20_plus":107,"19":5,"17_18":22,"15_16":21,"13_14":41,"11_12":31,"9_10":24,"7_8":24,"6u":31},"KS":{"total":52,"20_plus":14,"19":1,"17_18":0,"15_16":2,"13_14":5,"11_12":13,"9_10":10,"7_8":5,"6u":2},"KY":{"total":137,"20_plus":26,"19":4,"17_18":19,"15_16":25,"13_14":18,"11_12":22,"9_10":9,"7_8":5,"6u":9},"LA":{"total":18,"20_plus":10,"19":1,"17_18":1,"15_16":4,"13_14":0,"11_12":0,"9_10":1,"7_8":0,"6u":1},"MA":{"total":7780,"20_plus":936,"19":32,"17_18":333,"15_16":708,"13_14":1045,"11_12":1217,"9_10":1192,"7_8":1145,"6u":1172},"MD":{"total":825,"20_plus":225,"19":13,"17_18":83,"15_16":137,"13_14":101,"11_12":93,"9_10":82,"7_8":59,"6u":32},"ME":{"total":1306,"20_plus":183,"19":11,"17_18":141,"15_16":214,"13_14":215,"11_12":161,"9_10":112,"7_8":125,"6u":144},"MI":{"total":4612,"20_plus":1480,"19":85,"17_18":261,"15_16":434,"13_14":535,"11_12":545,"9_10":525,"7_8":387,"6u":360},"MN":{"total":10702,"20_plus":1235,"19":58,"17_18":214,"15_16":472,"13_14":1293,"11_12":2127,"9_10":2108,"7_8":1840,"6u":1355},"MO":{"total":316,"20_plus":96,"19":4,"17_18":21,"15_16":28,"13_14":31,"11_12":41,"9_10":47,"7_8":29,"6u":19},"MS":{"total":18,"20_plus":3,"19":0,"17_18":0,"15_16":0,"13_14":3,"11_12":4,"9_10":7,"7_8":0,"6u":1},"MT":{"total":546,"20_plus":242,"19":7,"17_18":19,"15_16":44,"13_14":48,"11_12":49,"9_10":44,"7_8":42,"6u":51},"NC":{"total":332,"20_plus":195,"19":10,"17_18":6,"15_16":27,"13_14":20,"11_12":27,"9_10":19,"7_8":19,"6u":9},"ND":{"total":895,"20_plus":30,"19":11,"17_18":61,"15_16":100,"13_14":166,"11_12":188,"9_10":131,"7_8":116,"6u":91},"NE":{"total":85,"20_plus":17,"19":1,"17_18":7,"15_16":6,"13_14":6,"11_12":7,"9_10":10,"7_8":20,"6u":11},"NH":{"total":1184,"20_plus":302,"19":7,"17_18":50,"15_16":108,"13_14":155,"11_12":151,"9_10":168,"7_8":126,"6u":117},"NJ":{"total":1097,"20_plus":223,"19":10,"17_18":61,"15_16":145,"13_14":178,"11_12":180,"9_10":160,"7_8":82,"6u":58},"NM":{"total":192,"20_plus":65,"19":3,"17_18":8,"15_16":15,"13_14":27,"11_12":24,"9_10":16,"7_8":19,"6u":15},"NV":{"total":56,"20_plus":20,"19":0,"17_18":0,"15_16":7,"13_14":9,"11_12":5,"9_10":7,"7_8":2,"6u":6},"NY":{"total":4562,"20_plus":818,"19":59,"17_18":214,"15_16":471,"13_14":598,"11_12":655,"9_10":624,"7_8":546,"6u":577},"OH":{"total":1040,"20_plus":348,"19":8,"17_18":54,"15_16":77,"13_14":119,"11_12":144,"9_10":116,"7_8":91,"6u":83},"OK":{"total":20,"20_plus":3,"19":0,"17_18":2,"15_16":1,"13_14":4,"11_12":5,"9_10":1,"7_8":2,"6u":2},"OR":{"total":159,"20_plus":86,"19":4,"17_18":16,"15_16":16,"13_14":7,"11_12":11,"9_10":9,"7_8":6,"6u":4},"PA":{"total":1817,"20_plus":521,"19":40,"17_18":205,"15_16":227,"13_14":248,"11_12":229,"9_10":163,"7_8":116,"6u":68},"RI":{"total":755,"20_plus":105,"19":7,"17_18":29,"15_16":65,"13_14":94,"11_12":108,"9_10":104,"7_8":111,"6u":132},"SC":{"total":108,"20_plus":35,"19":1,"17_18":7,"15_16":6,"13_14":5,"11_12":9,"9_10":8,"7_8":10,"6u":27},"SD":{"total":351,"20_plus":10,"19":9,"17_18":40,"15_16":65,"13_14":57,"11_12":53,"9_10":29,"7_8":42,"6u":46},"TN":{"total":143,"20_plus":48,"19":0,"17_18":9,"15_16":15,"13_14":9,"11_12":12,"9_10":10,"7_8":15,"6u":25},"TX":{"total":518,"20_plus":253,"19":2,"17_18":30,"15_16":41,"13_14":72,"11_12":38,"9_10":48,"7_8":21,"6u":13},"UT":{"total":327,"20_plus":167,"19":10,"17_18":15,"15_16":36,"13_14":33,"11_12":22,"9_10":23,"7_8":14,"6u":7},"VA":{"total":510,"20_plus":197,"19":8,"17_18":39,"15_16":75,"13_14":48,"11_12":49,"9_10":48,"7_8":28,"6u":18},"VT":{"total":1293,"20_plus":309,"19":8,"17_18":61,"15_16":107,"13_14":181,"11_12":191,"9_10":149,"7_8":129,"6u":158},"WA":{"total":739,"20_plus":428,"19":10,"17_18":35,"15_16":28,"13_14":52,"11_12":59,"9_10":54,"7_8":31,"6u":42},"WI":{"total":3313,"20_plus":434,"19":34,"17_18":158,"15_16":318,"13_14":432,"11_12":539,"9_10":481,"7_8":418,"6u":499},"WV":{"total":122,"20_plus":15,"19":0,"17_18":9,"15_16":16,"13_14":17,"11_12":12,"9_10":15,"7_8":14,"6u":24},"WY":{"total":272,"20_plus":89,"19":7,"17_18":23,"15_16":30,"13_14":30,"11_12":23,"9_10":26,"7_8":21,"6u":23}},"2008":{"AK":{"total":1670,"20_plus":782,"19":15,"17_18":60,"15_16":81,"13_14":151,"11_12":180,"9_10":148,"7_8":120,"6u":133},"AL":{"total":100,"20_plus":46,"19":0,"17_18":5,"15_16":5,"13_14":6,"11_12":8,"9_10":16,"7_8":10,"6u":4},"AR":{"total":18,"20_plus":9,"19":0,"17_18":1,"15_16":0,"13_14":2,"11_12":2,"9_10":1,"7_8":2,"6u":1},"AZ":{"total":295,"20_plus":99,"19":1,"17_18":12,"15_16":40,"13_14":35,"11_12":48,"9_10":26,"7_8":23,"6u":11},"CA":{"total":1452,"20_plus":839,"19":22,"17_18":70,"15_16":99,"13_14":104,"11_12":99,"9_10":106,"7_8":72,"6u":41},"CO":{"total":2084,"20_plus":1049,"19":28,"17_18":88,"15_16":199,"13_14":218,"11_12":174,"9_10":143,"7_8":114,"6u":71},"CT":{"total":2197,"20_plus":292,"19":8,"17_18":116,"15_16":229,"13_14":356,"11_12":373,"9_10":308,"7_8":282,"6u":233},"DC":{"total":102,"20_plus":45,"19":2,"17_18":9,"15_16":4,"13_14":16,"11_12":9,"9_10":10,"7_8":6,"6u":1},"DE":{"total":61,"20_plus":35,"19":4,"17_18":5,"15_16":3,"13_14":7,"11_12":2,"9_10":2,"7_8":1,"6u":2},"FL":{"total":630,"20_plus":334,"19":10,"17_18":38,"15_16":42,"13_14":49,"11_12":61,"9_10":27,"7_8":25,"6u":44},"GA":{"total":156,"20_plus":63,"19":2,"17_18":7,"15_16":10,"13_14":18,"11_12":15,"9_10":16,"7_8":12,"6u":13},"HI":{"total":2,"20_plus":0,"19":0,"17_18":2,"15_16":0,"13_14":0,"11_12":0,"9_10":0,"7_8":0,"6u":0},"IA":{"total":185,"20_plus":28,"19":3,"17_18":11,"15_16":13,"13_14":19,"11_12":24,"9_10":25,"7_8":30,"6u":32},"ID":{"total":528,"20_plus":268,"19":6,"17_18":22,"15_16":46,"13_14":42,"11_12":39,"9_10":29,"7_8":42,"6u":34},"IL":{"total":2076,"20_plus":455,"19":24,"17_18":134,"15_16":240,"13_14":244,"11_12":312,"9_10":278,"7_8":230,"6u":159},"IN":{"total":292,"20_plus":98,"19":4,"17_18":6,"15_16":29,"13_14":30,"11_12":28,"9_10":36,"7_8":24,"6u":37},"KS":{"total":51,"20_plus":14,"19":0,"17_18":2,"15_16":3,"13_14":8,"11_12":11,"9_10":10,"7_8":2,"6u":1},"KY":{"total":125,"20_plus":31,"19":2,"17_18":13,"15_16":21,"13_14":18,"11_12":13,"9_10":8,"7_8":8,"6u":11},"LA":{"total":36,"20_plus":21,"19":1,"17_18":3,"15_16":2,"13_14":0,"11_12":2,"9_10":3,"7_8":0,"6u":4},"MA":{"total":7766,"20_plus":1053,"19":53,"17_18":396,"15_16":708,"13_14":1084,"11_12":1209,"9_10":1235,"7_8":1001,"6u":1027},"MD":{"total":788,"20_plus":238,"19":13,"17_18":73,"15_16":129,"13_14":104,"11_12":88,"9_10":66,"7_8":54,"6u":23},"ME":{"total":1217,"20_plus":166,"19":9,"17_18":116,"15_16":185,"13_14":199,"11_12":142,"9_10":131,"7_8":120,"6u":149},"MI":{"total":4492,"20_plus":1496,"19":60,"17_18":288,"15_16":423,"13_14":517,"11_12":499,"9_10":463,"7_8":409,"6u":337},"MN":{"total":11489,"20_plus":1330,"19":77,"17_18":326,"15_16":655,"13_14":1404,"11_12":2131,"9_10":2281,"7_8":1895,"6u":1390},"MO":{"total":371,"20_plus":110,"19":7,"17_18":19,"15_16":29,"13_14":32,"11_12":51,"9_10":43,"7_8":31,"6u":49},"MS":{"total":20,"20_plus":2,"19":0,"17_18":0,"15_16":0,"13_14":4,"11_12":5,"9_10":2,"7_8":1,"6u":6},"MT":{"total":602,"20_plus":280,"19":3,"17_18":42,"15_16":47,"13_14":50,"11_12":38,"9_10":49,"7_8":50,"6u":43},"NC":{"total":355,"20_plus":205,"19":2,"17_18":20,"15_16":27,"13_14":32,"11_12":23,"9_10":28,"7_8":11,"6u":7},"ND":{"total":887,"20_plus":21,"19":9,"17_18":54,"15_16":122,"13_14":184,"11_12":153,"9_10":133,"7_8":122,"6u":89},"NE":{"total":89,"20_plus":6,"19":0,"17_18":3,"15_16":6,"13_14":4,"11_12":16,"9_10":22,"7_8":13,"6u":19},"NH":{"total":1206,"20_plus":287,"19":1,"17_18":59,"15_16":110,"13_14":125,"11_12":190,"9_10":175,"7_8":140,"6u":119},"NJ":{"total":1125,"20_plus":224,"19":10,"17_18":94,"15_16":139,"13_14":156,"11_12":163,"9_10":146,"7_8":120,"6u":73},"NM":{"total":180,"20_plus":55,"19":2,"17_18":14,"15_16":27,"13_14":21,"11_12":17,"9_10":16,"7_8":16,"6u":12},"NV":{"total":70,"20_plus":34,"19":0,"17_18":1,"15_16":7,"13_14":6,"11_12":8,"9_10":4,"7_8":3,"6u":7},"NY":{"total":4727,"20_plus":810,"19":40,"17_18":280,"15_16":462,"13_14":640,"11_12":666,"9_10":633,"7_8":592,"6u":604},"OH":{"total":1088,"20_plus":375,"19":18,"17_18":53,"15_16":86,"13_14":128,"11_12":139,"9_10":128,"7_8":98,"6u":63},"OK":{"total":34,"20_plus":17,"19":0,"17_18":0,"15_16":3,"13_14":3,"11_12":1,"9_10":4,"7_8":4,"6u":2},"OR":{"total":123,"20_plus":63,"19":0,"17_18":10,"15_16":12,"13_14":10,"11_12":8,"9_10":13,"7_8":4,"6u":3},"PA":{"total":1999,"20_plus":611,"19":44,"17_18":206,"15_16":260,"13_14":277,"11_12":223,"9_10":180,"7_8":114,"6u":84},"RI":{"total":868,"20_plus":134,"19":4,"17_18":41,"15_16":77,"13_14":106,"11_12":95,"9_10":121,"7_8":107,"6u":183},"SC":{"total":85,"20_plus":36,"19":1,"17_18":4,"15_16":6,"13_14":10,"11_12":9,"9_10":5,"7_8":9,"6u":5},"SD":{"total":352,"20_plus":14,"19":3,"17_18":39,"15_16":65,"13_14":62,"11_12":50,"9_10":37,"7_8":42,"6u":40},"TN":{"total":136,"20_plus":53,"19":1,"17_18":12,"15_16":13,"13_14":13,"11_12":10,"9_10":10,"7_8":11,"6u":13},"TX":{"total":595,"20_plus":300,"19":4,"17_18":33,"15_16":56,"13_14":53,"11_12":51,"9_10":55,"7_8":21,"6u":22},"UT":{"total":369,"20_plus":196,"19":8,"17_18":30,"15_16":33,"13_14":33,"11_12":15,"9_10":30,"7_8":14,"6u":10},"VA":{"total":549,"20_plus":214,"19":8,"17_18":44,"15_16":56,"13_14":55,"11_12":52,"9_10":54,"7_8":44,"6u":22},"VT":{"total":1236,"20_plus":260,"19":3,"17_18":47,"15_16":80,"13_14":199,"11_12":195,"9_10":152,"7_8":140,"6u":160},"WA":{"total":814,"20_plus":485,"19":17,"17_18":29,"15_16":24,"13_14":61,"11_12":52,"9_10":58,"7_8":40,"6u":48},"WI":{"total":3311,"20_plus":492,"19":28,"17_18":163,"15_16":289,"13_14":483,"11_12":494,"9_10":434,"7_8":439,"6u":489},"WV":{"total":114,"20_plus":18,"19":0,"17_18":7,"15_16":13,"13_14":16,"11_12":11,"9_10":16,"7_8":11,"6u":22},"WY":{"total":313,"20_plus":104,"19":6,"17_18":21,"15_16":31,"13_14":27,"11_12":35,"9_10":35,"7_8":24,"6u":30}},"2024":{"AK":{"total":2322,"20_plus":981,"19":21,"17_18":86,"15_16":115,"13_14":192,"11_12":183,"9_10":209,"7_8":216,"6u":319},"AL":{"total":217,"20_plus":47,"19":0,"17_18":3,"15_16":20,"13_14":18,"11_12":29,"9_10":29,"7_8":37,"6u":34},"AR":{"total":60,"20_plus":4,"19":0,"17_18":0,"15_16":6,"13_14":10,"11_12":6,"9_10":13,"7_8":9,"6u":12},"AZ":{"total":972,"20_plus":295,"19":13,"17_18":45,"15_16":80,"13_14":110,"11_12":119,"9_10":118,"7_8":110,"6u":82},"CA":{"total":3661,"20_plus":1328,"19":38,"17_18":145,"15_16":256,"13_14":320,"11_12":391,"9_10":466,"7_8":391,"6u":326},"CO":{"total":3401,"20_plus":1277,"19":28,"17_18":159,"15_16":240,"13_14":329,"11_12":344,"9_10":374,"7_8":348,"6u":302},"CT":{"total":2532,"20_plus":229,"19":26,"17_18":158,"15_16":318,"13_14":371,"11_12":393,"9_10":338,"7_8":364,"6u":335},"DC":{"total":279,"20_plus":104,"19":5,"17_18":9,"15_16":22,"13_14":24,"11_12":28,"9_10":32,"7_8":34,"6u":21},"DE":{"total":112,"20_plus":26,"19":1,"17_18":5,"15_16":12,"13_14":18,"11_12":16,"9_10":9,"7_8":22,"6u":3},"FL":{"total":1660,"20_plus":630,"19":27,"17_18":54,"15_16":112,"13_14":162,"11_12":194,"9_10":198,"7_8":190,"6u":93},"GA":{"total":206,"20_plus":54,"19":3,"17_18":15,"15_16":21,"13_14":24,"11_12":26,"9_10":28,"7_8":23,"6u":12},"HI":{"total":35,"20_plus":16,"19":0,"17_18":0,"15_16":4,"13_14":4,"11_12":5,"9_10":5,"7_8":1,"6u":0},"IA":{"total":472,"20_plus":67,"19":6,"17_18":20,"15_16":40,"13_14":53,"11_12":57,"9_10":71,"7_8":83,"6u":75},"ID":{"total":910,"20_plus":411,"19":13,"17_18":30,"15_16":61,"13_14":56,"11_12":73,"9_10":95,"7_8":79,"6u":92},"IL":{"total":3470,"20_plus":762,"19":62,"17_18":216,"15_16":340,"13_14":394,"11_12":437,"9_10":497,"7_8":378,"6u":384},"IN":{"total":679,"20_plus":138,"19":5,"17_18":32,"15_16":62,"13_14":82,"11_12":88,"9_10":127,"7_8":76,"6u":69},"KS":{"total":178,"20_plus":52,"19":3,"17_18":8,"15_16":15,"13_14":18,"11_12":26,"9_10":19,"7_8":26,"6u":11},"KY":{"total":186,"20_plus":52,"19":1,"17_18":4,"15_16":12,"13_14":20,"11_12":22,"9_10":27,"7_8":28,"6u":20},"LA":{"total":16,"20_plus":2,"19":0,"17_18":0,"15_16":3,"13_14":4,"11_12":2,"9_10":3,"7_8":1,"6u":1},"MA":{"total":11763,"20_plus":1471,"19":126,"17_18":689,"15_16":1128,"13_14":1577,"11_12":1555,"9_10":1666,"7_8":1695,"6u":1856},"MD":{"total":1612,"20_plus":453,"19":20,"17_18":128,"15_16":202,"13_14":192,"11_12":195,"9_10":180,"7_8":140,"6u":102},"ME":{"total":1235,"20_plus":79,"19":8,"17_18":52,"15_16":86,"13_14":121,"11_12":183,"9_10":196,"7_8":194,"6u":316},"MI":{"total":5327,"20_plus":1528,"19":82,"17_18":254,"15_16":378,"13_14":519,"11_12":635,"9_10":603,"7_8":616,"6u":712},"MN":{"total":15723,"20_plus":1981,"19":79,"17_18":380,"15_16":896,"13_14":2006,"11_12":2471,"9_10":2630,"7_8":2558,"6u":2722},"MO":{"total":1334,"20_plus":227,"19":14,"17_18":55,"15_16":107,"13_14":150,"11_12":189,"9_10":210,"7_8":194,"6u":188},"MS":{"total":17,"20_plus":3,"19":0,"17_18":1,"15_16":0,"13_14":1,"11_12":4,"9_10":4,"7_8":3,"6u":1},"MT":{"total":1249,"20_plus":589,"19":13,"17_18":44,"15_16":78,"13_14":89,"11_12":109,"9_10":111,"7_8":108,"6u":108},"NC":{"total":894,"20_plus":210,"19":11,"17_18":36,"15_16":77,"13_14":97,"11_12":132,"9_10":147,"7_8":121,"6u":63},"ND":{"total":1651,"20_plus":53,"19":20,"17_18":83,"15_16":121,"13_14":228,"11_12":256,"9_10":332,"7_8":262,"6u":296},"NE":{"total":259,"20_plus":37,"19":8,"17_18":18,"15_16":32,"13_14":36,"11_12":39,"9_10":36,"7_8":29,"6u":24},"NH":{"total":1130,"20_plus":124,"19":11,"17_18":57,"15_16":99,"13_14":146,"11_12":161,"9_10":192,"7_8":164,"6u":176},"NJ":{"total":2108,"20_plus":296,"19":36,"17_18":166,"15_16":224,"13_14":271,"11_12":310,"9_10":310,"7_8":310,"6u":185},"NM":{"total":295,"20_plus":78,"19":4,"17_18":13,"15_16":17,"13_14":37,"11_12":38,"9_10":42,"7_8":34,"6u":32},"NV":{"total":469,"20_plus":113,"19":3,"17_18":15,"15_16":31,"13_14":57,"11_12":68,"9_10":81,"7_8":67,"6u":34},"NY":{"total":6795,"20_plus":1018,"19":84,"17_18":278,"15_16":558,"13_14":714,"11_12":816,"9_10":1016,"7_8":1023,"6u":1288},"OH":{"total":1894,"20_plus":309,"19":25,"17_18":89,"15_16":111,"13_14":207,"11_12":247,"9_10":335,"7_8":305,"6u":266},"OK":{"total":81,"20_plus":8,"19":2,"17_18":3,"15_16":6,"13_14":9,"11_12":17,"9_10":11,"7_8":15,"6u":10},"OR":{"total":412,"20_plus":229,"19":4,"17_18":16,"15_16":20,"13_14":31,"11_12":44,"9_10":29,"7_8":15,"6u":24},"PA":{"total":3374,"20_plus":725,"19":56,"17_18":276,"15_16":379,"13_14":480,"11_12":404,"9_10":455,"7_8":363,"6u":236},"RI":{"total":767,"20_plus":135,"19":15,"17_18":42,"15_16":71,"13_14":95,"11_12":74,"9_10":91,"7_8":105,"6u":139},"SC":{"total":221,"20_plus":68,"19":6,"17_18":14,"15_16":22,"13_14":27,"11_12":18,"9_10":28,"7_8":18,"6u":20},"SD":{"total":561,"20_plus":6,"19":7,"17_18":34,"15_16":76,"13_14":79,"11_12":95,"9_10":86,"7_8":76,"6u":102},"TN":{"total":431,"20_plus":116,"19":4,"17_18":32,"15_16":26,"13_14":49,"11_12":44,"9_10":58,"7_8":67,"6u":35},"TX":{"total":1345,"20_plus":461,"19":10,"17_18":49,"15_16":109,"13_14":146,"11_12":173,"9_10":174,"7_8":128,"6u":95},"UT":{"total":634,"20_plus":268,"19":16,"17_18":38,"15_16":59,"13_14":71,"11_12":56,"9_10":53,"7_8":44,"6u":29},"VA":{"total":1259,"20_plus":345,"19":16,"17_18":85,"15_16":123,"13_14":134,"11_12":149,"9_10":158,"7_8":154,"6u":95},"VT":{"total":1196,"20_plus":86,"19":11,"17_18":56,"15_16":83,"13_14":154,"11_12":169,"9_10":197,"7_8":198,"6u":242},"WA":{"total":2113,"20_plus":997,"19":22,"17_18":64,"15_16":133,"13_14":126,"11_12":204,"9_10":222,"7_8":187,"6u":158},"WI":{"total":5098,"20_plus":709,"19":36,"17_18":154,"15_16":289,"13_14":546,"11_12":745,"9_10":786,"7_8":818,"6u":1015},"WV":{"total":185,"20_plus":48,"19":0,"17_18":7,"15_16":8,"13_14":25,"11_12":22,"9_10":21,"7_8":19,"6u":35},"WY":{"total":471,"20_plus":99,"19":7,"17_18":30,"15_16":54,"13_14":61,"11_12":44,"9_10":51,"7_8":54,"6u":71}}};
+
+// Pad missing years with empty objects so slider still works
+const ALL_YEARS = ["2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021","2022","2023","2024"];
+ALL_YEARS.forEach(y => { if (!AGE_DATA[y]) AGE_DATA[y] = {}; });
+
+const NORM = {"2007":{"AK":229.75,"AL":1.25,"AR":0.56,"AZ":3.99,"CA":3.41,"CO":35.18,"CT":59.04,"DC":14.65,"DE":5.76,"FL":2.8,"GA":1.19,"IA":5.77,"ID":24.36,"IL":15.31,"IN":4.51,"KS":1.77,"KY":3.04,"LA":0.39,"MA":110.67,"MD":13.36,"ME":95.86,"MI":45.77,"MN":187.54,"MO":5.13,"MS":0.61,"MT":50.36,"NC":3.18,"ND":114.88,"NE":4.33,"NH":85.95,"NJ":11.81,"NM":9.07,"NV":1.8,"NY":22.58,"OH":8.81,"OK":0.51,"OR":3.75,"PA":14.83,"RI":68.8,"SC":2.11,"SD":39.59,"TN":2.07,"TX":1.78,"UT":10.0,"VA":5.91,"VT":201.06,"WA":9.59,"WI":56.21,"WV":6.8,"WY":47.15},"2024":{"AK":316.61,"AL":4.32,"AR":1.99,"AZ":13.59,"CA":9.26,"CO":58.9,"CT":70.22,"DC":40.46,"DE":11.31,"FL":7.71,"GA":1.92,"HI":2.41,"IA":14.79,"ID":49.48,"IL":27.08,"IN":10.01,"KS":6.06,"KY":4.13,"LA":0.34,"MA":167.33,"MD":26.1,"ME":90.65,"MI":52.86,"MN":275.53,"MO":21.67,"MS":0.57,"MT":115.2,"NC":8.56,"ND":211.91,"NE":13.2,"NH":82.03,"NJ":22.69,"NM":13.93,"NV":15.11,"NY":33.64,"OH":16.05,"OK":2.05,"OR":9.72,"PA":24.67,"RI":69.89,"SC":4.32,"SD":63.27,"TN":6.24,"TX":4.61,"UT":19.38,"VA":14.59,"VT":185.98,"WA":27.42,"WI":86.5,"WV":10.31,"WY":81.65}};
+// Fill remaining years with empty so no crash
+ALL_YEARS.forEach(y => { if (!NORM[y]) NORM[y] = {}; });
+
+(function() {
+  Object.keys(NORM).forEach(yr => {
+    const epa = NORM[yr]["E PA"] || 0, wpa = NORM[yr]["W PA"] || 0;
+    if (epa || wpa) { NORM[yr]["PA"] = (epa + wpa) / 2; delete NORM[yr]["E PA"]; delete NORM[yr]["W PA"]; }
+  });
+})();
+
+const POS = {
+  "WA":[0.13,0.17],"OR":[0.10,0.28],"CA":[0.08,0.44],"NV":[0.14,0.38],
+  "ID":[0.19,0.26],"MT":[0.27,0.17],"WY":[0.28,0.29],"UT":[0.21,0.37],
+  "CO":[0.31,0.39],"AZ":[0.20,0.49],"NM":[0.27,0.51],"ND":[0.42,0.15],
+  "SD":[0.43,0.24],"NE":[0.43,0.33],"KS":[0.44,0.42],"OK":[0.45,0.51],
+  "TX":[0.41,0.62],"MN":[0.51,0.17],"IA":[0.54,0.30],"MO":[0.55,0.40],
+  "AR":[0.55,0.52],"LA":[0.55,0.64],"WI":[0.58,0.20],"IL":[0.60,0.32],
+  "MS":[0.61,0.59],"TN":[0.64,0.49],"AL":[0.65,0.59],"MI":[0.66,0.21],
+  "IN":[0.65,0.33],"KY":[0.67,0.43],"OH":[0.71,0.32],"WV":[0.74,0.41],
+  "GA":[0.70,0.59],"FL":[0.70,0.72],"SC":[0.75,0.54],"NC":[0.77,0.48],
+  "VA":[0.78,0.41],"MD":[0.80,0.36],"DC":[0.815,0.40],"DE":[0.83,0.34],
+  "NJ":[0.84,0.30],"PA":[0.78,0.28],"NY":[0.83,0.22],
+  "CT":[0.87,0.28],"RI":[0.89,0.26],"MA":[0.88,0.21],"VT":[0.86,0.16],
+  "NH":[0.875,0.14],"ME":[0.895,0.10],"AK":[0.10,0.84],"HI":[0.22,0.90]
+};
+
+const STATE_NAMES = {
+  "AK":"Alaska","AL":"Alabama","AR":"Arkansas","AZ":"Arizona","CA":"California",
+  "CO":"Colorado","CT":"Connecticut","DC":"Washington D.C.","DE":"Delaware",
+  "FL":"Florida","GA":"Georgia","HI":"Hawaii","IA":"Iowa","ID":"Idaho",
+  "IL":"Illinois","IN":"Indiana","KS":"Kansas","KY":"Kentucky","LA":"Louisiana",
+  "MA":"Massachusetts","MD":"Maryland","ME":"Maine","MI":"Michigan","MN":"Minnesota",
+  "MO":"Missouri","MS":"Mississippi","MT":"Montana","NC":"North Carolina",
+  "ND":"North Dakota","NE":"Nebraska","NH":"New Hampshire","NJ":"New Jersey",
+  "NM":"New Mexico","NV":"Nevada","NY":"New York","OH":"Ohio","OK":"Oklahoma",
+  "OR":"Oregon","PA":"Pennsylvania","RI":"Rhode Island","SC":"South Carolina",
+  "SD":"South Dakota","TN":"Tennessee","TX":"Texas","UT":"Utah","VA":"Virginia",
+  "VT":"Vermont","WA":"Washington","WI":"Wisconsin","WV":"West Virginia","WY":"Wyoming"
+};
+
+const YEARS = ALL_YEARS;
+const GLOBAL_MAX_NORM = 320;
+const W = 900, H = 506, MAX_R = 62, MIN_R = 3;
+let curYear = "2024", curMode = "raw", curAge = "total", playTimer = null;
+
+function colorForVal(v, mode) {
+  if (!v || v <= 0) return "rgba(196,220,235,0.28)";
+  const maxV = mode === "norm" ? GLOBAL_MAX_NORM : getMaxRaw();
+  const t = Math.min(v / maxV, 1);
+  const stops = [[200,230,245],[46,140,190],[8,104,172],[8,64,129]];
+  const seg = t * 3, i = Math.min(Math.floor(seg), 2), f = seg - i;
+  const [r1,g1,b1]=stops[i], [r2,g2,b2]=stops[i+1];
+  return `rgb(${Math.round(r1+(r2-r1)*f)},${Math.round(g1+(g2-g1)*f)},${Math.round(b1+(b2-b1)*f)})`;
+}
+function getMaxRaw() {
+  const vals = Object.values(AGE_DATA[curYear]||{}).map(d => d[curAge]||0);
+  return Math.max(...vals, 1);
+}
+function radiusFor(v, mode) {
+  if (!v || v <= 0) return MIN_R * 0.4;
+  if (mode === "norm") return Math.max(MIN_R, Math.sqrt(v / GLOBAL_MAX_NORM) * MAX_R);
+  return Math.max(MIN_R, Math.sqrt(v / getMaxRaw()) * MAX_R);
+}
+function getAgeVal(st) { return (AGE_DATA[curYear]?.[st]?.[curAge]) || 0; }
+function getVal(st) {
+  if (curMode === "norm") {
+    if (curAge === "total") return NORM[curYear]?.[st] || 0;
+    const rawTotal = AGE_DATA[curYear]?.[st]?.total || 0;
+    const rawAge = getAgeVal(st);
+    if (!rawTotal) return 0;
+    return (NORM[curYear]?.[st] || 0) * (rawAge / rawTotal);
+  }
+  return getAgeVal(st);
+}
+
+const svgEl = document.getElementById("carto-svg");
+const stKeys = Object.keys(POS);
+const nodes = {};
+const NS = "http://www.w3.org/2000/svg";
+stKeys.forEach(st => {
+  const g = document.createElementNS(NS, "g");
+  const c = document.createElementNS(NS, "circle");
+  const lbl = document.createElementNS(NS, "text");
+  c.setAttribute("class", "carto-bubble");
+  c.style.transition = "r 0.45s cubic-bezier(0.34,1.4,0.64,1), fill 0.4s ease, opacity 0.35s ease";
+  lbl.setAttribute("class", "state-label");
+  lbl.textContent = st;
+  g.appendChild(c); g.appendChild(lbl);
+  svgEl.appendChild(g);
+  nodes[st] = { c, lbl };
+});
+
+const tt = document.getElementById("carto-tooltip");
+function showTip(st, v, raw100k, rawCount, evt) {
+  const name = STATE_NAMES[st] || st;
+  let html = `<strong>${name}</strong>`;
+  if (curMode === "norm") {
+    html += `<span class="tt-rate">${v ? v.toFixed(1) : "—"} per 100k residents</span>`;
+    html += `<span class="tt-raw">${rawCount ? rawCount.toLocaleString() + " registrations" : "no data"}</span>`;
+  } else {
+    html += `<span class="tt-rate">${rawCount ? rawCount.toLocaleString() + " registrations" : "no data"}</span>`;
+    if (raw100k) html += `<span class="tt-raw">${raw100k.toFixed(1)} per 100k</span>`;
+  }
+  tt.innerHTML = html;
+  tt.style.opacity = 1;
+  tt.style.left = (evt.clientX + 14) + "px";
+  tt.style.top = (evt.clientY - 38) + "px";
+}
+
+function render() {
+  const nd = NORM[curYear] || {};
+  const ad = AGE_DATA[curYear] || {};
+  const rawVals = stKeys.map(st => (ad[st]?.[curAge] || 0)).filter(v => v > 0);
+  document.getElementById("cs-total").textContent = rawVals.reduce((a,b)=>a+b,0).toLocaleString();
+  const peakV = curMode === "norm" ? GLOBAL_MAX_NORM : Math.max(...rawVals, 1);
+  document.getElementById("leg-mid").textContent = curMode === "norm" ? Math.round(peakV/2) : Math.round(peakV/2).toLocaleString();
+  document.getElementById("leg-note").textContent = curMode === "norm"
+    ? "Bubble size & color = registrations per 100,000 residents · Scale fixed to all-time peak"
+    : "Bubble size & color = registrations · Scale relative to current year + age group maximum";
+
+  stKeys.forEach(st => {
+    const { c, lbl } = nodes[st];
+    const [nx, ny] = POS[st];
+    const cx = nx * W, cy = ny * H;
+    const v = getVal(st);
+    const rawC = ad[st]?.[curAge] || 0;
+    const normV = nd[st] || 0;
+    const r = radiusFor(v, curMode);
+    c.setAttribute("cx", cx); c.setAttribute("cy", cy); c.setAttribute("r", r);
+    c.setAttribute("fill", colorForVal(v, curMode));
+    c.setAttribute("stroke", (v/(curMode==="norm"?GLOBAL_MAX_NORM:peakV))>0.45?"rgba(255,255,255,0.22)":"rgba(8,104,172,0.35)");
+    c.setAttribute("stroke-width", "1.2");
+    c.style.opacity = v > 0 ? "1" : "0.15";
+    lbl.setAttribute("x", cx); lbl.setAttribute("y", cy);
+    const fs = r<9?0:r<13?6:r<19?7.5:r<28?9:10;
+    lbl.style.fontSize = fs + "px";
+    lbl.style.display = r < 7 ? "none" : "";
+    const tint = v/(curMode==="norm"?GLOBAL_MAX_NORM:peakV);
+    lbl.style.fill = tint > 0.35 ? "rgba(240,250,255,0.92)" : "rgba(7,21,37,0.82)";
+    c.onmousemove = (evt) => showTip(st, v, normV, rawC, evt);
+    c.onmouseleave = () => { tt.style.opacity = 0; };
+  });
+}
+
+const slider = document.getElementById("carto-yr-slider");
+const yrLabel = document.getElementById("carto-year-label");
+const playBtn = document.getElementById("carto-play");
+
+slider.addEventListener("input", () => {
+  curYear = YEARS[+slider.value];
+  yrLabel.textContent = curYear;
+  render();
+});
+playBtn.addEventListener("click", () => {
+  if (playTimer) {
+    clearInterval(playTimer); playTimer = null; playBtn.innerHTML = "&#9654; Play";
+  } else {
+    playBtn.innerHTML = "&#9646;&#9646; Pause";
+    let idx = +slider.value;
+    playTimer = setInterval(() => {
+      idx = (idx + 1) % YEARS.length;
+      slider.value = idx; curYear = YEARS[idx]; yrLabel.textContent = curYear; render();
+      if (idx === YEARS.length - 1) { clearInterval(playTimer); playTimer = null; playBtn.innerHTML = "&#9654; Play"; }
+    }, 800);
+  }
+});
+function setMode(mode, btn) {
+  curMode = mode;
+  document.querySelectorAll(".carto-mode-toggle button").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active"); render();
+}
+function setAge(btn) {
+  curAge = btn.dataset.age;
+  document.querySelectorAll("#carto-age-bar button").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active"); render();
+}
+render();
+</script>
+</body>
+</html>

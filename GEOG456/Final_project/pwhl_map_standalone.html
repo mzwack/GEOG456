@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Professional Women's Hockey League (PWHL) Teams – 2025–26 Season</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #0d1117; color: #e8eaf0; height: 100vh; display: flex; flex-direction: column; }
+
+  header {
+    background: #0d1117;
+    border-bottom: 1px solid #21262d;
+    padding: 14px 28px;
+    display: flex; align-items: center; z-index: 1000;
+  }
+  header h1 {
+    font-size: 1.45rem; font-weight: 700; color: #f0f6fc;
+    letter-spacing: 0.2px; line-height: 1.2;
+  }
+  header .season-sub {
+    font-size: 0.82rem; font-weight: 400; color: #8b949e;
+    margin-top: 2px; letter-spacing: 0.3px;
+  }
+
+  #map-container { flex: 1; position: relative; }
+  #map { width: 100%; height: 100%; }
+
+  /* Legend */
+  .legend {
+    background: rgba(10,14,26,0.93); border: 1px solid #3a3560;
+    border-radius: 10px; padding: 10px 14px; min-width: 170px;
+  }
+  .legend h4 { font-size: 0.7rem; font-weight: 600; color: #c8b8ff; margin-bottom: 7px; text-transform: uppercase; letter-spacing: 1px; }
+  .legend-row { display: flex; align-items: center; gap: 8px; margin: 3px 0; font-size: 0.7rem; color: #ccc; }
+  .legend-swatch { width: 20px; height: 13px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+
+  /* Popup */
+  .team-popup { width: 430px; max-height: 70vh; overflow-y: auto; background: #0d1225; border-radius: 12px; font-family: 'Inter', sans-serif; scrollbar-width: thin; scrollbar-color: #4a2d8a transparent; }
+  .team-popup::-webkit-scrollbar { width: 5px; }
+  .team-popup::-webkit-scrollbar-thumb { background: #4a2d8a; border-radius: 3px; }
+
+  .popup-header {
+    background: linear-gradient(135deg, #1a0a2e, #0d1b3e);
+    padding: 14px 16px 12px; border-radius: 12px 12px 0 0;
+    display: flex; align-items: center; gap: 14px;
+    border-bottom: 2px solid #3a1d6e;
+  }
+  .popup-header img { width: 54px; height: 54px; object-fit: contain; background: white; border-radius: 50%; padding: 4px; }
+  .popup-header .team-name { font-size: 1.05rem; font-weight: 700; color: #fff; }
+  .popup-header .team-meta { font-size: 0.73rem; color: #a09dc0; margin-top: 3px; }
+
+  .popup-body { padding: 12px 16px; }
+
+  .record-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .stat-pill { background: #1e2445; border-radius: 8px; padding: 6px 10px; text-align: center; flex: 1; border: 1px solid #3a3a6a; }
+  .stat-pill .num { font-size: 1.3rem; font-weight: 700; color: #8b7cf6; }
+  .stat-pill .lbl { font-size: 0.62rem; color: #888; text-transform: uppercase; letter-spacing: 0.8px; }
+
+  .section-title {
+    font-size: 0.68rem; font-weight: 600; color: #8b7cf6; text-transform: uppercase;
+    letter-spacing: 1px; margin: 10px 0 5px; border-bottom: 1px solid #252848; padding-bottom: 3px;
+  }
+  .coaches-list { font-size: 0.78rem; color: #c8c8e8; line-height: 1.8; }
+  .coaches-list strong { color: #e8e8ff; }
+
+  .player-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+  .player-table th {
+    background: #1a1d3a; color: #8b7cf6; padding: 5px 5px; text-align: left;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .player-table td { padding: 4px 5px; border-bottom: 1px solid #1e2240; color: #d0d2e8; vertical-align: top; }
+  .player-table tr:hover td { background: #161930; }
+  .g-badge { display:inline-block; background:#1e2445; color:#8b7cf6; border-radius:3px; padding:1px 4px; font-size:0.6rem; font-weight:700; }
+
+  .intl-box { background:#12183a; border:1px solid #3a3560; border-radius:7px; padding:9px 11px; margin-top:7px; }
+  .intl-title { font-size:0.68rem; font-weight:600; color:#f0a060; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:5px; }
+
+  /* Marker */
+  .pwhl-marker { background:white; border-radius:50%; border:3px solid #4a2d8a; box-shadow:0 3px 12px rgba(74,45,138,0.6); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform 0.15s, box-shadow 0.15s; }
+  .pwhl-marker:hover { transform:scale(1.15); box-shadow:0 5px 18px rgba(139,124,246,0.9); }
+  .pwhl-marker img { width:100%; height:100%; border-radius:50%; object-fit:contain; padding:3px; }
+
+  /* Loading */
+  .loading-overlay { position:absolute; inset:0; background:rgba(10,14,26,0.88); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999; gap:12px; }
+  .spinner { width:38px; height:38px; border:4px solid #3a1d6e; border-top-color:#8b7cf6; border-radius:50%; animation:spin 0.85s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .loading-overlay p { color:#a09dc0; font-size:0.88rem; }
+
+  /* Leaflet popup overrides */
+  .leaflet-popup-content-wrapper { background:transparent!important; box-shadow:0 8px 32px rgba(0,0,0,0.75)!important; border-radius:12px!important; padding:0!important; }
+  .leaflet-popup-content { margin:0!important; }
+  .leaflet-popup-tip { background:#0d1117!important; }
+  .leaflet-popup-close-button { color:#aaa!important; top:7px!important; right:9px!important; font-size:17px!important; z-index:10; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Professional Women's Hockey League (PWHL) Teams</h1>
+    <div class="season-sub">2025–26 Season</div>
+  </div>
+</header>
+
+<div id="map-container">
+  <div id="map"></div>
+  <div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+    <p>Loading map data…</p>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+
+// ── EMBEDDED DATA (standalone — no server needed) ──────────────
+const PWHL_DATA_INLINE    = {"season":"2025-26","generated_at":"2026-04-19 13:22:08.544795","origins":{"us_states":{"NY":10,"WI":4,"MI":10,"PA":1,"MA":7,"IL":8,"MN":29,"CO":3,"CA":4,"GA":1,"ND":1,"CT":2,"OH":2,"TX":2,"MO":1,"AK":1,"WA":1},"ca_provinces":{"ON":58,"BC":8,"NL":2,"NS":3,"SK":4,"QC":12,"PE":1,"AB":8,"MB":6,"NB":1}},"teams":{"BOS":{"abbreviation":"BOS","wins":19,"losses":7,"otl":1,"coaches":{"head":"Kris Sparre","assistants":["Jordan LaVall\u00e9e-Smotherman","Stefanie McKeough"]},"players":[{"name":"Aerin Frankel","jersey":31,"position":"G","dob":"1999-05-24","hometown":"New York City, New York, USA","country":"USA","province_state":"New York","goals":null,"games_played":24,"is_goalie":true,"save_pct":0.953},{"name":"Abbey Levy","jersey":39,"position":"G","dob":"2000-04-02","hometown":"Congers, New York, USA","country":"USA","province_state":"New York","goals":null,"games_played":1,"is_goalie":true,"save_pct":0.875},{"name":"Amanda Thiele","jersey":30,"position":"G","dob":"2002-01-01","hometown":"Madison, Wisconsin, USA","country":"USA","province_state":"Wisconsin","goals":null,"games_played":1,"is_goalie":true,"save_pct":0.889},{"name":"Megan Keller","jersey":5,"position":"D","dob":"1996-05-01","hometown":"Farmington, Michigan, USA","country":"USA","province_state":"Michigan","goals":5,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Haley Winn","jersey":8,"position":"D","dob":"2003-07-14","hometown":"Rochester, New York, USA","country":"USA","province_state":"New York","goals":1,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Hadley Hartmetz","jersey":6,"position":"D","dob":"2001-03-25","hometown":"Phoenixville, Pennsylvania, USA","country":"USA","province_state":"Pennsylvania","goals":0,"games_played":13,"is_goalie":false,"save_pct":null},{"name":"Riley Brengman","jersey":16,"position":"D","dob":"2002-07-06","hometown":"China Township, Michigan, USA","country":"USA","province_state":"Michigan","goals":2,"games_played":14,"is_goalie":false,"save_pct":null},{"name":"Zoe Boyd","jersey":3,"position":"D","dob":"2000-08-09","hometown":"Caledon East, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":12,"is_goalie":false,"save_pct":null},{"name":"Rylind MacKinnon","jersey":53,"position":"D","dob":"2000-03-05","hometown":"Cranbrook, British Columbia, Canada","country":"CAN","province_state":"British Columbia","goals":0,"games_played":14,"is_goalie":false,"save_pct":null},{"name":"Mia Biotti","jersey":7,"position":"D","dob":"2002-07-24","hometown":"Cambridge, Massachusetts, USA","country":"USA","province_state":"Massachusetts","goals":0,"games_played":5,"is_goalie":false,"save_pct":null},{"name":"Olivia Zafuto","jersey":73,"position":"F","dob":"1997-01-25","hometown":"Niagara Falls, New York, USA","country":"USA","province_state":"New York","goals":0,"games_played":3,"is_goalie":false,"save_pct":null},{"name":"Jamie Lee Rattray","jersey":47,"position":"F","dob":"1992-09-30","hometown":"Kanata, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":3,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Abby Newhook","jersey":19,"position":"F","dob":"2003-05-13","hometown":"St. John's, Newfoundland and Labrador, Canada","country":"CAN","province_state":"Newfoundland and Labrador","goals":5,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Ella Huber","jersey":26,"position":"F","dob":"2002-12-18","hometown":"Northfield, Illinois, USA","country":"USA","province_state":"Illinois","goals":2,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Jill Saulnier","jersey":44,"position":"F","dob":"1992-03-07","hometown":"Halifax, Nova Scotia, Canada","country":"CAN","province_state":"Nova Scotia","goals":1,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Liz Schepers","jersey":13,"position":"F","dob":"1999-02-13","hometown":"Mound, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":2,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Shay Maloney","jersey":27,"position":"F","dob":"1999-08-31","hometown":"McHenry, Illinois, USA","country":"USA","province_state":"Illinois","goals":2,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Sophie Shirley","jersey":9,"position":"F","dob":"1999-06-30","hometown":"Saskatoon, Saskatchewan, Canada","country":"CAN","province_state":"Saskatchewan","goals":0,"games_played":12,"is_goalie":false,"save_pct":null},{"name":"Hannah Brandt","jersey":20,"position":"F","dob":"1993-11-27","hometown":"Vadnais Heights, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":0,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Olivia Mobley","jersey":15,"position":"F","dob":"2001-10-28","hometown":"St. Louis Park, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":3,"games_played":10,"is_goalie":false,"save_pct":null},{"name":"Loren Gabel","jersey":36,"position":"F","dob":"1997-07-24","hometown":"Kitchener, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":2,"is_goalie":false,"save_pct":null}],"intl_players":[{"name":"Daniela Pej\u0161ov\u00e1","jersey":55,"position":"D","dob":"2002-08-14","hometown":"Teplice, Czech Republic","country":"CZE","province_state":"","goals":1,"games_played":14,"is_goalie":false,"save_pct":null},{"name":"Noemi Neubauerov\u00e1","jersey":81,"position":"D","dob":"2003-01-01","hometown":"Prague, Czech Republic","country":"CZE","province_state":"","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Susanna Tapani","jersey":77,"position":"F","dob":"1993-03-02","hometown":"Laitila, Finland","country":"FIN","province_state":"","goals":4,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Alina M\u00fcller","jersey":11,"position":"F","dob":"1998-03-12","hometown":"Winterthur, Switzerland","country":"CHE","province_state":"","goals":3,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Theresa Schafzahl","jersey":37,"position":"F","dob":"2000-04-12","hometown":"Weiz, Austria","country":"AUT","province_state":"","goals":1,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Laura Kluge","jersey":25,"position":"F","dob":"1996-11-06","hometown":"Berlin, Germany","country":"DEU","province_state":"","goals":0,"games_played":15,"is_goalie":false,"save_pct":null}]},"MIN":{"abbreviation":"MIN","wins":16,"losses":9,"otl":3,"coaches":{"head":"Ken Appleby","assistants":["Allie Thunstrom","Samantha Holmes"]},"players":[{"name":"Marl\u00e8ne Boissonnault","jersey":1,"position":"G","dob":"1998-05-12","hometown":"Sherbrooke, Quebec, Canada","country":"CAN","province_state":"Quebec","goals":null,"games_played":4,"is_goalie":true,"save_pct":0.912},{"name":"Nicole Hensley","jersey":29,"position":"G","dob":"1994-06-23","hometown":"Littleton, Colorado, USA","country":"USA","province_state":"Colorado","goals":null,"games_played":12,"is_goalie":true,"save_pct":0.915},{"name":"Maddie Rooney","jersey":35,"position":"G","dob":"1997-07-07","hometown":"Duluth, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":null,"games_played":15,"is_goalie":true,"save_pct":0.922},{"name":"Lee Stecklein","jersey":2,"position":"D","dob":"1994-04-23","hometown":"Roseville, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":0,"games_played":13,"is_goalie":false,"save_pct":null},{"name":"Kendall Cooper","jersey":4,"position":"D","dob":"2002-05-19","hometown":"Oakville, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":1,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Sidney Morin","jersey":5,"position":"D","dob":"1995-06-06","hometown":"Minnetonka, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":0,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Madison Bizal","jersey":9,"position":"D","dob":"2000-01-25","hometown":"Elk River, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":0,"games_played":6,"is_goalie":false,"save_pct":null},{"name":"Brooke Becker","jersey":15,"position":"D","dob":"2002-05-30","hometown":"Orchard Park, New York, USA","country":"USA","province_state":"New York","goals":0,"games_played":14,"is_goalie":false,"save_pct":null},{"name":"Ava Rinker","jersey":17,"position":"D","dob":"2003-01-01","hometown":"Steamboat Springs, Colorado, USA","country":"USA","province_state":"Colorado","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Mae Batherson","jersey":21,"position":"D","dob":"2000-12-05","hometown":"Garmisch-Partenkirchen, Germany","country":"CAN","province_state":"Ontario","goals":2,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Natalie Buchbinder","jersey":22,"position":"D","dob":"1999-01-22","hometown":"Fairport, New York, USA","country":"USA","province_state":"New York","goals":0,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Katy Knoll","jersey":6,"position":"F","dob":"2001-01-16","hometown":"Amherst, New York, USA","country":"USA","province_state":"New York","goals":6,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Claire Butorac","jersey":7,"position":"F","dob":"1999-09-24","hometown":"Andover, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":0,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Samantha Cogan","jersey":8,"position":"F","dob":"1997-07-07","hometown":"Ottawa, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":2,"games_played":23,"is_goalie":false,"save_pct":null},{"name":"Kelly Pannek","jersey":12,"position":"F","dob":"1995-12-29","hometown":"Plymouth, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":8,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Grace Zumwinkle","jersey":13,"position":"F","dob":"1999-04-23","hometown":"Excelsior, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":6,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Dominique Petrie","jersey":14,"position":"F","dob":"2001-02-21","hometown":"Hermosa Beach, California, USA","country":"USA","province_state":"California","goals":2,"games_played":10,"is_goalie":false,"save_pct":null},{"name":"Kaitlyn O'Donohoe","jersey":16,"position":"F","dob":"2001-09-20","hometown":"Atlanta, Georgia, USA","country":"USA","province_state":"Georgia","goals":0,"games_played":4,"is_goalie":false,"save_pct":null},{"name":"\u00c9lizabeth Gigu\u00e8re","jersey":18,"position":"F","dob":"1997-05-08","hometown":"Quebec City, Quebec, Canada","country":"CAN","province_state":"Quebec","goals":3,"games_played":24,"is_goalie":false,"save_pct":null},{"name":"Vanessa Upson","jersey":24,"position":"F","dob":"2003-11-18","hometown":"Stoney Creek, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":13,"is_goalie":false,"save_pct":null},{"name":"Kendall Coyne Schofield","jersey":26,"position":"F","dob":"1992-05-25","hometown":"Oak Lawn, Illinois, USA","country":"USA","province_state":"Illinois","goals":10,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Taylor Heise","jersey":27,"position":"F","dob":"2000-03-17","hometown":"Lake City, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":3,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Abby Hustler","jersey":74,"position":"F","dob":"2003-05-05","hometown":"St. Louis, Prince Edward Island, Canada","country":"CAN","province_state":"Prince Edward Island","goals":2,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Britta Curl-Salemme","jersey":77,"position":"F","dob":"2000-03-20","hometown":"Bismarck, North Dakota, USA","country":"USA","province_state":"North Dakota","goals":7,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Peyton Anderson","jersey":91,"position":"F","dob":"2001-04-18","hometown":"Arvada, Colorado, USA","country":"USA","province_state":"Colorado","goals":0,"games_played":15,"is_goalie":false,"save_pct":null}],"intl_players":[{"name":"Kl\u00e1ra Hyml\u00e1rov\u00e1","jersey":71,"position":"F","dob":"1999-02-27","hometown":"Opava, Czech Republic","country":"CZE","province_state":"","goals":1,"games_played":15,"is_goalie":false,"save_pct":null}]},"MTL":{"abbreviation":"MTL","wins":19,"losses":7,"otl":2,"coaches":{"head":"Kori Cheverie","assistants":["Caroline Ouellette","Emmanuelle Blais"]},"players":[{"name":"Megan Warrener","jersey":1,"position":"G","dob":"1997-03-24","hometown":"Calgary, Alberta, Canada","country":"CAN","province_state":"Alberta","goals":null,"games_played":2,"is_goalie":true,"save_pct":0.893},{"name":"Ann-Ren\u00e9e Desbiens","jersey":35,"position":"G","dob":"1994-04-10","hometown":"La Malbaie, Quebec, Canada","country":"CAN","province_state":"Quebec","goals":null,"games_played":24,"is_goalie":true,"save_pct":0.955},{"name":"Kati Tabin","jersey":9,"position":"D","dob":"1997-04-21","hometown":"Winnipeg, Manitoba, Canada","country":"CAN","province_state":"Manitoba","goals":1,"games_played":18,"is_goalie":false,"save_pct":null},{"name":"Tamara Giaquinto","jersey":12,"position":"D","dob":"2002-03-29","hometown":"Toronto, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":4,"is_goalie":false,"save_pct":null},{"name":"Jessica DiGirolamo","jersey":22,"position":"D","dob":"1999-02-13","hometown":"Mississauga, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":1,"games_played":18,"is_goalie":false,"save_pct":null},{"name":"Erin Ambrose","jersey":23,"position":"D","dob":"1994-04-30","hometown":"Keswick, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":14,"is_goalie":false,"save_pct":null},{"name":"Amanda Boulier","jersey":44,"position":"D","dob":"1993-03-30","hometown":"Watertown, Connecticut, USA","country":"USA","province_state":"Connecticut","goals":0,"games_played":18,"is_goalie":false,"save_pct":null},{"name":"Kelly Ann Nadeau","jersey":51,"position":"D","dob":"1998-03-30","hometown":"Mont-Laurier, Quebec, Canada","country":"CAN","province_state":"Quebec","goals":0,"games_played":6,"is_goalie":false,"save_pct":null},{"name":"Nicole Gosling","jersey":61,"position":"D","dob":"2002-04-21","hometown":"London, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":1,"games_played":18,"is_goalie":false,"save_pct":null},{"name":"Maggie Flaherty","jersey":91,"position":"D","dob":"2000-06-02","hometown":"Lakeville, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":3,"games_played":18,"is_goalie":false,"save_pct":null},{"name":"Maya Labad","jersey":4,"position":"F","dob":"2002-05-07","hometown":"Mascouche, Quebec, Canada","country":"CAN","province_state":"Quebec","goals":1,"games_played":4,"is_goalie":false,"save_pct":null},{"name":"Samantha Isbell","jersey":5,"position":"F","dob":"1998-02-17","hometown":"Thunder Bay, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":8,"is_goalie":false,"save_pct":null},{"name":"Laura Stacey","jersey":7,"position":"F","dob":"1994-11-12","hometown":"Kleinburg, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":3,"games_played":18,"is_goalie":false,"save_pct":null},{"name":"Abby Roque","jersey":11,"position":"F","dob":"1997-09-25","hometown":"Sault Ste. Marie, Michigan, USA","country":"USA","province_state":"Michigan","goals":5,"games_played":17,"is_goalie":false,"save_pct":null},{"name":"Alexandra Labelle","jersey":13,"position":"F","dob":"1996-02-27","hometown":"Saint-Louis-de-Gonzague, Quebec, Canada","country":"CAN","province_state":"Quebec","goals":0,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Claire Vekich","jersey":15,"position":"F","dob":"2002-01-01","hometown":"Edina, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Hayley Scamurra","jersey":16,"position":"F","dob":"1994-09-28","hometown":"Williamsville, New York, USA","country":"USA","province_state":"New York","goals":2,"games_played":18,"is_goalie":false,"save_pct":null},{"name":"Dara Greig","jersey":17,"position":"F","dob":"2000-12-30","hometown":"Camden, New Jersey, USA","country":"CAN","province_state":"Ontario","goals":3,"games_played":18,"is_goalie":false,"save_pct":null},{"name":"Kaitlin Willoughby","jersey":19,"position":"F","dob":"1995-03-26","hometown":"Saskatoon, Saskatchewan, Canada","country":"CAN","province_state":"Saskatchewan","goals":0,"games_played":18,"is_goalie":false,"save_pct":null},{"name":"Maureen Murphy","jersey":21,"position":"F","dob":"1999-12-15","hometown":"Buffalo, New York, USA","country":"USA","province_state":"New York","goals":4,"games_played":18,"is_goalie":false,"save_pct":null},{"name":"Shiann Darkangelo","jersey":27,"position":"F","dob":"1993-11-28","hometown":"Brighton, Michigan, USA","country":"USA","province_state":"Michigan","goals":3,"games_played":18,"is_goalie":false,"save_pct":null},{"name":"Catherine Dubois","jersey":28,"position":"F","dob":"1995-07-29","hometown":"Quebec City, Quebec, Canada","country":"CAN","province_state":"Quebec","goals":0,"games_played":12,"is_goalie":false,"save_pct":null},{"name":"Marie-Philip Poulin","jersey":29,"position":"F","dob":"1991-03-28","hometown":"Beauceville, Quebec, Canada","country":"CAN","province_state":"Quebec","goals":8,"games_played":17,"is_goalie":false,"save_pct":null},{"name":"Jade Downie-Landry","jersey":77,"position":"F","dob":"1995-10-03","hometown":"Saint-Jean-sur-Richelieu, Quebec, Canada","country":"CAN","province_state":"Quebec","goals":1,"games_played":11,"is_goalie":false,"save_pct":null},{"name":"Skylar Irving","jersey":88,"position":"F","dob":"2002-01-21","hometown":"Kingston, Massachusetts, USA","country":"USA","province_state":"Massachusetts","goals":1,"games_played":16,"is_goalie":false,"save_pct":null}],"intl_players":[{"name":"Sandra Abstreiter","jersey":30,"position":"G","dob":"1998-07-23","hometown":"Freising, Germany","country":"DEU","province_state":"","goals":null,"games_played":3,"is_goalie":true,"save_pct":0.887},{"name":"Nadia Mattivi","jersey":93,"position":"D","dob":"2001-01-01","hometown":"Bolzano, Italy","country":"ITA","province_state":"","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Lina Ljungblom","jersey":25,"position":"F","dob":"2001-10-15","hometown":"Sk\u00f6vde, Sweden","country":"SWE","province_state":"","goals":2,"games_played":9,"is_goalie":false,"save_pct":null},{"name":"Nat\u00e1lie Ml\u00fdnkov\u00e1","jersey":96,"position":"F","dob":"2001-05-24","hometown":"Zl\u00edn, Czech Republic","country":"CZE","province_state":"","goals":4,"games_played":18,"is_goalie":false,"save_pct":null}]},"NYR":{"abbreviation":"NYR","wins":10,"losses":15,"otl":2,"coaches":{"head":"Mike Behrens","assistants":["Kim St-Pierre","Allyson Clarke"]},"players":[{"name":"Kayle Osborne","jersey":82,"position":"G","dob":"2002-02-28","hometown":"Ottawa, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":null,"games_played":26,"is_goalie":true,"save_pct":0.903},{"name":"Callie Shanahan","jersey":37,"position":"G","dob":"2003-05-26","hometown":"Commerce, Michigan, USA","country":"USA","province_state":"Michigan","goals":null,"games_played":4,"is_goalie":true,"save_pct":0.891},{"name":"Kaley Doyle","jersey":39,"position":"G","dob":"2003-01-01","hometown":"Duluth, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":null,"games_played":1,"is_goalie":true,"save_pct":0.889},{"name":"Dayle Ross","jersey":2,"position":"D","dob":"2003-05-26","hometown":"Spirit River, Alberta, Canada","country":"CAN","province_state":"Alberta","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Olivia Knowles","jersey":9,"position":"D","dob":"1999-01-24","hometown":"Campbell River, British Columbia, Canada","country":"CAN","province_state":"British Columbia","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Jaime Bourbonnais","jersey":14,"position":"D","dob":"1998-09-09","hometown":"Mississauga, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":1,"games_played":26,"is_goalie":false,"save_pct":null},{"name":"Lauren Bernard","jersey":16,"position":"D","dob":"2001-07-15","hometown":"Madison, Ohio, USA","country":"USA","province_state":"Ohio","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Allyson Simpson","jersey":20,"position":"D","dob":"2000-12-20","hometown":"Fort Worth, Texas, USA","country":"USA","province_state":"Texas","goals":2,"games_played":28,"is_goalie":false,"save_pct":null},{"name":"Micah Zandee-Hart","jersey":28,"position":"D","dob":"1997-01-13","hometown":"Saanichton, British Columbia, Canada","country":"CAN","province_state":"British Columbia","goals":1,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Jincy Roese","jersey":33,"position":"D","dob":"1997-05-15","hometown":"O'Fallon, Missouri, USA","country":"USA","province_state":"Missouri","goals":0,"games_played":22,"is_goalie":false,"save_pct":null},{"name":"Elle Hartje","jersey":4,"position":"F","dob":"2001-04-13","hometown":"Detroit, Michigan, USA","country":"USA","province_state":"Michigan","goals":0,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Savannah Norcross","jersey":7,"position":"F","dob":"2000-06-10","hometown":"Lynn, Massachusetts, USA","country":"USA","province_state":"Massachusetts","goals":1,"games_played":23,"is_goalie":false,"save_pct":null},{"name":"Sarah Fillier","jersey":10,"position":"F","dob":"2000-06-09","hometown":"Georgetown, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":9,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Taylor Girard","jersey":17,"position":"F","dob":"1998-07-17","hometown":"Macomb, Michigan, USA","country":"USA","province_state":"Michigan","goals":7,"games_played":17,"is_goalie":false,"save_pct":null},{"name":"Maddi Wheeler","jersey":18,"position":"F","dob":"2002-01-01","hometown":"Elk River, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":3,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Paetyn Levis","jersey":19,"position":"F","dob":"1999-11-06","hometown":"Rogers, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":5,"games_played":28,"is_goalie":false,"save_pct":null},{"name":"Anna Bargman","jersey":22,"position":"F","dob":"2002-08-07","hometown":"Boxford, Massachusetts, USA","country":"USA","province_state":"Massachusetts","goals":4,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Anne Cherkowski","jersey":24,"position":"F","dob":"2002-07-06","hometown":"Coldstream, British Columbia, Canada","country":"CAN","province_state":"British Columbia","goals":2,"games_played":26,"is_goalie":false,"save_pct":null},{"name":"Casey O'Brien","jersey":26,"position":"F","dob":"2001-08-27","hometown":"Milton, Massachusetts, USA","country":"USA","province_state":"Massachusetts","goals":7,"games_played":26,"is_goalie":false,"save_pct":null},{"name":"Emmy Fecteau","jersey":29,"position":"F","dob":"1999-04-07","hometown":"Saint-Odilon-de-Cranbourne, Quebec, Canada","country":"CAN","province_state":"Quebec","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Clair DeGeorge","jersey":41,"position":"F","dob":"1999-06-07","hometown":"Anchorage, Alaska, USA","country":"USA","province_state":"Alaska","goals":0,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Kristin O'Neill","jersey":43,"position":"F","dob":"1998-03-30","hometown":"Mississauga, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":4,"games_played":28,"is_goalie":false,"save_pct":null},{"name":"Kira Juodikis","jersey":55,"position":"F","dob":"2002-01-01","hometown":"Naperville, Illinois, USA","country":"USA","province_state":"Illinois","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Sarah Bujold","jersey":62,"position":"F","dob":"1996-02-26","hometown":"Riverview, New Brunswick, Canada","country":"CAN","province_state":"New Brunswick","goals":3,"games_played":21,"is_goalie":false,"save_pct":null},{"name":"Kayla Vespa","jersey":81,"position":"F","dob":"1997-04-01","hometown":"Hamilton, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":2,"games_played":23,"is_goalie":false,"save_pct":null}],"intl_players":[{"name":"Maja Nyl\u00e9n Persson","jersey":8,"position":"D","dob":"2000-11-20","hometown":"Avesta, Sweden","country":"SWE","province_state":"","goals":2,"games_played":28,"is_goalie":false,"save_pct":null},{"name":"Nicole Vallario","jersey":11,"position":"D","dob":"2001-08-30","hometown":"Lugano, Switzerland","country":"CHE","province_state":"","goals":1,"games_played":9,"is_goalie":false,"save_pct":null},{"name":"Denisa K\u0159i\u017eov\u00e1","jersey":44,"position":"F","dob":"1994-11-03","hometown":"Horn\u00ed Cerekev, Czech Republic","country":"CZE","province_state":"","goals":1,"games_played":5,"is_goalie":false,"save_pct":null},{"name":"Krist\u00fdna Kaltounkov\u00e1","jersey":98,"position":"F","dob":"2002-04-14","hometown":"Vla\u0161im, Czech Republic","country":"CZE","province_state":"","goals":11,"games_played":21,"is_goalie":false,"save_pct":null}]},"OTT":{"abbreviation":"OTT","wins":12,"losses":13,"otl":3,"coaches":{"head":"Carla MacLeod","assistants":["Meghann Treacy","Liz Knox"]},"players":[{"name":"Kaitlyn Ross","jersey":32,"position":"G","dob":"2001-01-01","hometown":"Whitby, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":null,"games_played":2,"is_goalie":true,"save_pct":0.887},{"name":"Gwyneth Philips","jersey":33,"position":"G","dob":"2000-09-17","hometown":"Athens, Ohio, USA","country":"USA","province_state":"Ohio","goals":null,"games_played":26,"is_goalie":true,"save_pct":0.927},{"name":"Kendra Woodland","jersey":70,"position":"G","dob":"2000-01-01","hometown":"Ottawa, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":null,"games_played":1,"is_goalie":true,"save_pct":0.875},{"name":"Jocelyne Larocque","jersey":3,"position":"D","dob":"1988-05-19","hometown":"Ste. Anne, Manitoba, Canada","country":"CAN","province_state":"Manitoba","goals":0,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Rory Guilday","jersey":5,"position":"D","dob":"2002-09-07","hometown":"Chanhassen, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":1,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Stephanie Markowski","jersey":6,"position":"D","dob":"2001-08-24","hometown":"Edmonton, Alberta, Canada","country":"CAN","province_state":"Alberta","goals":1,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Kathryn Reilly","jersey":8,"position":"D","dob":"2001-01-17","hometown":"Richmond, British Columbia, Canada","country":"CAN","province_state":"British Columbia","goals":0,"games_played":11,"is_goalie":false,"save_pct":null},{"name":"Brooke Hobson","jersey":11,"position":"D","dob":"1999-05-27","hometown":"Prince Albert, Saskatchewan, Canada","country":"CAN","province_state":"Saskatchewan","goals":1,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Emma Greco","jersey":25,"position":"D","dob":"1995-03-06","hometown":"Burlington, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":3,"is_goalie":false,"save_pct":null},{"name":"Alexie Guay","jersey":42,"position":"D","dob":"2001-01-01","hometown":"Quebec City, Quebec, Canada","country":"CAN","province_state":"Quebec","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Alexa Vasko","jersey":10,"position":"F","dob":"1999-02-07","hometown":"St. Catharines, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Olivia Wallin","jersey":14,"position":"F","dob":"2002-03-09","hometown":"Oakville, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":2,"is_goalie":false,"save_pct":null},{"name":"Reece Hunt","jersey":15,"position":"F","dob":"2002-01-01","hometown":"Mississauga, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Gabbie Hughes","jersey":17,"position":"F","dob":"1999-10-04","hometown":"Lino Lakes, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":2,"games_played":14,"is_goalie":false,"save_pct":null},{"name":"Brianne Jenner","jersey":19,"position":"F","dob":"1991-05-04","hometown":"Oakville, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":8,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Taylor House","jersey":22,"position":"F","dob":"1998-09-29","hometown":"Joliet, Illinois, USA","country":"USA","province_state":"Illinois","goals":0,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Sarah Wozniewicz","jersey":23,"position":"F","dob":"2003-08-25","hometown":"Cochrane, Alberta, Canada","country":"CAN","province_state":"Alberta","goals":3,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Emily Clark","jersey":26,"position":"F","dob":"1995-11-28","hometown":"Saskatoon, Saskatchewan, Canada","country":"CAN","province_state":"Saskatchewan","goals":2,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Brooke McQuigge","jersey":27,"position":"F","dob":"2000-06-09","hometown":"Bowmanville, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":3,"is_goalie":false,"save_pct":null},{"name":"Peyton Hemp","jersey":29,"position":"F","dob":"2003-05-15","hometown":"Andover, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":0,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Rebecca Leslie","jersey":37,"position":"F","dob":"1996-05-08","hometown":"Ottawa, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":8,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Michela Cava","jersey":86,"position":"F","dob":"1994-03-26","hometown":"Thunder Bay, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":3,"is_goalie":false,"save_pct":null},{"name":"Maggy Burbidge","jersey":94,"position":"F","dob":"2001-01-01","hometown":"Ottawa, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":null,"games_played":null,"is_goalie":false,"save_pct":null}],"intl_players":[{"name":"Sanni Ahola","jersey":1,"position":"G","dob":"2000-06-03","hometown":"Helsinki, Finland","country":"FIN","province_state":"","goals":null,"games_played":2,"is_goalie":true,"save_pct":0.905},{"name":"Vita Poniatovskaia","jersey":9,"position":"D","dob":"2002-01-01","hometown":"Moscow, Russia","country":"RUS","province_state":"","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Ronja Savolainen","jersey":88,"position":"D","dob":"1997-11-29","hometown":"Helsinki, Finland","country":"FIN","province_state":"","goals":3,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Kate\u0159ina Mr\u00e1zov\u00e1","jersey":16,"position":"F","dob":"1992-10-19","hometown":"Kolin, Czech Republic","country":"CZE","province_state":"","goals":1,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Fanuza Kadirova","jersey":71,"position":"F","dob":"1998-04-06","hometown":"Kukmor, Russia","country":"RUS","province_state":"","goals":4,"games_played":14,"is_goalie":false,"save_pct":null}]},"TOR":{"abbreviation":"TOR","wins":13,"losses":7,"otl":0,"coaches":{"head":"Troy Ryan","assistants":["Sami Jo Small","Vicky Sunohara"]},"players":[{"name":"Raygan Kirk","jersey":1,"position":"G","dob":"2001-03-11","hometown":"Ste. Anne, Manitoba, Canada","country":"CAN","province_state":"Manitoba","goals":null,"games_played":20,"is_goalie":true,"save_pct":0.93},{"name":"Elaine Chuli","jersey":29,"position":"G","dob":"1994-05-16","hometown":"Waterford, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":null,"games_played":6,"is_goalie":true,"save_pct":0.912},{"name":"Jessie McPherson","jersey":91,"position":"G","dob":"2001-01-01","hometown":"Collingwood, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":null,"games_played":2,"is_goalie":true,"save_pct":0.891},{"name":"Jessica Kondas","jersey":2,"position":"D","dob":"2000-01-03","hometown":"Calgary, Alberta, Canada","country":"CAN","province_state":"Alberta","goals":0,"games_played":8,"is_goalie":false,"save_pct":null},{"name":"Kali Flanagan","jersey":6,"position":"D","dob":"1995-09-19","hometown":"Burlington, Massachusetts, USA","country":"USA","province_state":"Massachusetts","goals":2,"games_played":20,"is_goalie":false,"save_pct":null},{"name":"Hannah Baskin","jersey":10,"position":"D","dob":"2003-07-10","hometown":"Minnetonka, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":0,"games_played":6,"is_goalie":false,"save_pct":null},{"name":"Allie Munroe","jersey":12,"position":"D","dob":"1997-04-20","hometown":"Yarmouth, Nova Scotia, Canada","country":"CAN","province_state":"Nova Scotia","goals":0,"games_played":14,"is_goalie":false,"save_pct":null},{"name":"Renata Fast","jersey":14,"position":"D","dob":"1994-10-06","hometown":"Burlington, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":1,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Savannah Harmon","jersey":15,"position":"D","dob":"1995-10-27","hometown":"Downers Grove, Illinois, USA","country":"USA","province_state":"Illinois","goals":1,"games_played":20,"is_goalie":false,"save_pct":null},{"name":"Ella Shelton","jersey":17,"position":"D","dob":"1998-01-19","hometown":"Ingersoll, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":2,"games_played":20,"is_goalie":false,"save_pct":null},{"name":"Daryl Watts","jersey":9,"position":"F","dob":"1999-05-15","hometown":"Toronto, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":7,"games_played":18,"is_goalie":false,"save_pct":null},{"name":"Kiara Zanon","jersey":11,"position":"F","dob":"2001-01-01","hometown":"Peterborough, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":1,"games_played":20,"is_goalie":false,"save_pct":null},{"name":"Lauren Messier","jersey":16,"position":"F","dob":"2003-07-03","hometown":"Burlington, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":1,"games_played":5,"is_goalie":false,"save_pct":null},{"name":"Jesse Compher","jersey":18,"position":"F","dob":"1999-07-01","hometown":"Northbrook, Illinois, USA","country":"USA","province_state":"Illinois","goals":6,"games_played":20,"is_goalie":false,"save_pct":null},{"name":"Emma Gentry","jersey":20,"position":"F","dob":"2002-10-23","hometown":"Alpena, Michigan, USA","country":"USA","province_state":"Michigan","goals":1,"games_played":17,"is_goalie":false,"save_pct":null},{"name":"Maggie Connors","jersey":22,"position":"F","dob":"2000-10-22","hometown":"St. John's, Newfoundland and Labrador, Canada","country":"CAN","province_state":"Newfoundland and Labrador","goals":2,"games_played":20,"is_goalie":false,"save_pct":null},{"name":"Natalie Spooner","jersey":24,"position":"F","dob":"1990-10-17","hometown":"Scarborough, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":3,"games_played":20,"is_goalie":false,"save_pct":null},{"name":"Clara Van Wieren","jersey":25,"position":"F","dob":"2002-01-25","hometown":"Okemos, Michigan, USA","country":"USA","province_state":"Michigan","goals":0,"games_played":20,"is_goalie":false,"save_pct":null},{"name":"Emma Maltais","jersey":27,"position":"F","dob":"1999-11-04","hometown":"Burlington, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":3,"games_played":20,"is_goalie":false,"save_pct":null},{"name":"Blayre Turnbull","jersey":40,"position":"F","dob":"1993-07-15","hometown":"Stellarton, Nova Scotia, Canada","country":"CAN","province_state":"Nova Scotia","goals":5,"games_played":20,"is_goalie":false,"save_pct":null},{"name":"Claire Dalton","jersey":42,"position":"F","dob":"2000-03-20","hometown":"Etobicoke, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":20,"is_goalie":false,"save_pct":null},{"name":"Emma Woods","jersey":67,"position":"F","dob":"1995-12-18","hometown":"Burford, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":1,"games_played":20,"is_goalie":false,"save_pct":null}],"intl_players":[{"name":"Anna Kjellbin","jersey":71,"position":"D","dob":"1994-03-16","hometown":"G\u00f6teborg, Sweden","country":"SWE","province_state":"","goals":1,"games_played":20,"is_goalie":false,"save_pct":null},{"name":"Anneke Rankila","jersey":13,"position":"F","dob":"2001-01-01","hometown":"Espoo, Finland","country":"FIN","province_state":"","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Sara Hjalmarsson","jersey":19,"position":"F","dob":"1998-02-08","hometown":"Bankeryd, Sweden","country":"SWE","province_state":"","goals":2,"games_played":20,"is_goalie":false,"save_pct":null},{"name":"Kristin Della Rovere","jersey":21,"position":"F","dob":"2001-01-01","hometown":"Bolzano, Italy","country":"ITA","province_state":"","goals":null,"games_played":null,"is_goalie":false,"save_pct":null}]},"SEA":{"abbreviation":"SEA","wins":7,"losses":17,"otl":3,"coaches":{"head":"Steve O'Rourke","assistants":["Christine Bumstead","Clayton Beddoes"]},"players":[{"name":"Hannah Murphy","jersey":83,"position":"G","dob":"2003-08-03","hometown":"Bradford, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":null,"games_played":8,"is_goalie":true,"save_pct":0.893},{"name":"Corinne Schroeder","jersey":30,"position":"G","dob":"1999-08-17","hometown":"Elm Creek, Manitoba, Canada","country":"CAN","province_state":"Manitoba","goals":null,"games_played":16,"is_goalie":true,"save_pct":0.91},{"name":"Carly Jackson","jersey":70,"position":"G","dob":"2001-01-01","hometown":"Guelph, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":null,"games_played":1,"is_goalie":true,"save_pct":0.889},{"name":"Cayla Barnes","jersey":3,"position":"D","dob":"1999-01-07","hometown":"Eastvale, California, USA","country":"USA","province_state":"California","goals":0,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Anna Wilgren","jersey":5,"position":"D","dob":"1999-11-18","hometown":"Hudson, Wisconsin, USA","country":"USA","province_state":"Wisconsin","goals":0,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Emily Zumwinkle","jersey":6,"position":"D","dob":"2001-01-01","hometown":"Lakeville, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Emily Brown","jersey":11,"position":"D","dob":"1998-12-30","hometown":"Blaine, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":0,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Mariah Keopple","jersey":20,"position":"D","dob":"2000-06-27","hometown":"Menomonie, Wisconsin, USA","country":"USA","province_state":"Wisconsin","goals":0,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Lyndie Lobdell","jersey":24,"position":"D","dob":"2002-09-01","hometown":"Aurora, Illinois, USA","country":"USA","province_state":"Illinois","goals":0,"games_played":11,"is_goalie":false,"save_pct":null},{"name":"Megan Carter","jersey":27,"position":"D","dob":"2001-05-23","hometown":"Milton, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":1,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Lily Delianedis","jersey":7,"position":"F","dob":"2001-10-07","hometown":"Edina, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":0,"games_played":10,"is_goalie":false,"save_pct":null},{"name":"Natalie Snodgrass","jersey":8,"position":"F","dob":"1998-12-17","hometown":"Eagan, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":1,"games_played":15,"is_goalie":false,"save_pct":null},{"name":"Jenna Buglioni","jersey":10,"position":"F","dob":"2002-03-13","hometown":"Port Moody, British Columbia, Canada","country":"CAN","province_state":"British Columbia","goals":0,"games_played":13,"is_goalie":false,"save_pct":null},{"name":"Mikyla Grant-Mentis","jersey":13,"position":"F","dob":"1998-07-15","hometown":"Brampton, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":1,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Jessie Eldridge","jersey":18,"position":"F","dob":"1997-12-17","hometown":"Barrie, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":7,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Hannah Bilka","jersey":19,"position":"F","dob":"2001-03-24","hometown":"Coppell, Texas, USA","country":"USA","province_state":"Texas","goals":4,"games_played":14,"is_goalie":false,"save_pct":null},{"name":"Hilary Knight","jersey":21,"position":"F","dob":"1989-07-12","hometown":"Palo Alto, California, USA","country":"USA","province_state":"California","goals":3,"games_played":14,"is_goalie":false,"save_pct":null},{"name":"Alex Carpenter","jersey":25,"position":"F","dob":"1994-04-13","hometown":"Cambridge, Massachusetts, USA","country":"USA","province_state":"Massachusetts","goals":6,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Gabrielle David","jersey":28,"position":"F","dob":"2001-01-01","hometown":"Quebec City, Quebec, Canada","country":"CAN","province_state":"Quebec","goals":null,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Jada Habisch","jersey":52,"position":"F","dob":"2002-06-25","hometown":"Buffalo, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":0,"games_played":null,"is_goalie":false,"save_pct":null},{"name":"Marah Wagner","jersey":66,"position":"F","dob":"2001-09-14","hometown":"Seattle, Washington, USA","country":"USA","province_state":"Washington","goals":0,"games_played":13,"is_goalie":false,"save_pct":null},{"name":"Sydney Langseth","jersey":71,"position":"F","dob":"2002-01-29","hometown":"Eden Prairie, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":0,"games_played":2,"is_goalie":false,"save_pct":null},{"name":"Lexie Adzija","jersey":78,"position":"F","dob":"2000-06-30","hometown":"St. Thomas, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":3,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Julia Gosling","jersey":88,"position":"F","dob":"2001-02-21","hometown":"London, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":6,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Danielle Serdachny","jersey":92,"position":"F","dob":"2001-05-12","hometown":"Edmonton, Alberta, Canada","country":"CAN","province_state":"Alberta","goals":2,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Brooke Bryant","jersey":17,"position":"F","dob":"2000-08-22","hometown":"Linden, California, USA","country":"USA","province_state":"California","goals":0,"games_played":16,"is_goalie":false,"save_pct":null}],"intl_players":[{"name":"Aneta Tejralov\u00e1","jersey":2,"position":"D","dob":"1996-01-04","hometown":"Prague, Czech Republic","country":"CZE","province_state":"","goals":1,"games_played":9,"is_goalie":false,"save_pct":null},{"name":"Theresa Schafzahl","jersey":37,"position":"F","dob":"2000-04-12","hometown":"Weiz, Austria","country":"AUT","province_state":"","goals":null,"games_played":null,"is_goalie":false,"save_pct":null}]},"VAN":{"abbreviation":"VAN","wins":7,"losses":15,"otl":4,"coaches":{"head":"Brian Idalski","assistants":["B.J. Adams","Myles Fitzgerald"]},"players":[{"name":"Kristen Campbell","jersey":50,"position":"G","dob":"1997-11-30","hometown":"Brandon, Manitoba, Canada","country":"CAN","province_state":"Manitoba","goals":null,"games_played":11,"is_goalie":true,"save_pct":0.901},{"name":"Emerance Maschmeyer","jersey":38,"position":"G","dob":"1994-10-05","hometown":"Bruderheim, Alberta, Canada","country":"CAN","province_state":"Alberta","goals":null,"games_played":18,"is_goalie":true,"save_pct":0.917},{"name":"Kimberly Newell","jersey":35,"position":"G","dob":"1997-03-15","hometown":"Listowel, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":null,"games_played":1,"is_goalie":true,"save_pct":0.889},{"name":"Madison Samoskevich","jersey":7,"position":"D","dob":"2002-11-15","hometown":"Sandy Hook, Connecticut, USA","country":"USA","province_state":"Connecticut","goals":1,"games_played":24,"is_goalie":false,"save_pct":null},{"name":"Sydney Bard","jersey":11,"position":"D","dob":"2001-01-15","hometown":"New Hartford, New York, USA","country":"USA","province_state":"New York","goals":0,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Sophie Jaques","jersey":16,"position":"D","dob":"2000-10-16","hometown":"Toronto, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":8,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Ashton Bell","jersey":21,"position":"D","dob":"1999-12-07","hometown":"Deloraine, Manitoba, Canada","country":"CAN","province_state":"Manitoba","goals":1,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Mellissa Channell-Watkins","jersey":23,"position":"D","dob":"1994-12-16","hometown":"Oakville, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Claire Thompson","jersey":42,"position":"D","dob":"1998-01-28","hometown":"Toronto, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":3,"games_played":25,"is_goalie":false,"save_pct":null},{"name":"Emma Greco","jersey":25,"position":"D","dob":"1995-03-06","hometown":"Burlington, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":13,"is_goalie":false,"save_pct":null},{"name":"Izzy Daniel","jersey":8,"position":"F","dob":"2000-09-29","hometown":"Minneapolis, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":7,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Kaitlin Chan","jersey":9,"position":"F","dob":"2003-01-05","hometown":"Toronto, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":1,"games_played":14,"is_goalie":false,"save_pct":null},{"name":"Jenn Gardiner","jersey":12,"position":"F","dob":"2001-09-18","hometown":"Surrey, British Columbia, Canada","country":"CAN","province_state":"British Columbia","goals":4,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Gabby Rosenthal","jersey":15,"position":"F","dob":"1999-09-13","hometown":"Blaine, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":1,"games_played":26,"is_goalie":false,"save_pct":null},{"name":"Malia Schneider","jersey":18,"position":"F","dob":"1998-10-03","hometown":"Millarville, Alberta, Canada","country":"CAN","province_state":"Alberta","goals":0,"games_played":2,"is_goalie":false,"save_pct":null},{"name":"Mannon McMahon","jersey":19,"position":"F","dob":"2001-07-29","hometown":"Maple Grove, Minnesota, USA","country":"USA","province_state":"Minnesota","goals":3,"games_played":14,"is_goalie":false,"save_pct":null},{"name":"Sarah Nurse","jersey":20,"position":"F","dob":"1995-01-04","hometown":"Hamilton, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":7,"games_played":16,"is_goalie":false,"save_pct":null},{"name":"Abby Boreen","jersey":22,"position":"F","dob":"2000-04-03","hometown":"Somerset, Wisconsin, USA","country":"USA","province_state":"Wisconsin","goals":4,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Hannah Miller","jersey":34,"position":"F","dob":"1996-02-16","hometown":"North Vancouver, British Columbia, Canada","country":"CAN","province_state":"British Columbia","goals":4,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Anna Segedi","jersey":51,"position":"F","dob":"2000-12-20","hometown":"Commerce, Michigan, USA","country":"USA","province_state":"Michigan","goals":1,"games_played":24,"is_goalie":false,"save_pct":null},{"name":"Darcie Lappan","jersey":72,"position":"F","dob":"2001-09-15","hometown":"Kingston, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":12,"is_goalie":false,"save_pct":null},{"name":"Michela Cava","jersey":86,"position":"F","dob":"1994-03-26","hometown":"Thunder Bay, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":1,"games_played":13,"is_goalie":false,"save_pct":null},{"name":"Brooke McQuigge","jersey":27,"position":"F","dob":"2000-06-09","hometown":"Bowmanville, Ontario, Canada","country":"CAN","province_state":"Ontario","goals":0,"games_played":13,"is_goalie":false,"save_pct":null}],"intl_players":[{"name":"Nina Jobst-Smith","jersey":28,"position":"D","dob":"2001-08-30","hometown":"North Vancouver, British Columbia, Canada","country":"DEU","province_state":"","goals":0,"games_played":17,"is_goalie":false,"save_pct":null},{"name":"Tereza Vani\u0161ov\u00e1","jersey":13,"position":"F","dob":"1996-01-30","hometown":"Strakonice, Czech Republic","country":"CZE","province_state":"","goals":3,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Michelle Karvinen","jersey":33,"position":"F","dob":"1990-03-27","hometown":"Rodovre, Denmark","country":"DNK","province_state":"","goals":3,"games_played":27,"is_goalie":false,"save_pct":null},{"name":"Anna Meixner","jersey":94,"position":"F","dob":"1994-06-16","hometown":"Zell am See, Austria","country":"AUT","province_state":"","goals":1,"games_played":14,"is_goalie":false,"save_pct":null},{"name":"Anna Shokhina","jersey":97,"position":"F","dob":"1997-06-23","hometown":"Novosinkovo, Russia","country":"RUS","province_state":"","goals":1,"games_played":14,"is_goalie":false,"save_pct":null}]}}};
+const TEAM_GEOJSON_INLINE = {"type":"FeatureCollection","name":"PWHL_table","crs":{"type":"name","properties":{"name":"urn:ogc:def:crs:OGC:1.3:CRS84"}},"features":[{"type":"Feature","properties":{"Team":"Boston Fleet","Stadium":"Tsongas Center","Latitude":42.64985,"Longitude":-71.31318,"Logo_url":"https://assets.leaguestat.com/pwhl/logos/1_5.png"},"geometry":{"type":"Point","coordinates":[-71.31318,42.64985]}},{"type":"Feature","properties":{"Team":"Minnesota Frost","Stadium":"Grand Casino Arena","Latitude":44.94501,"Longitude":-93.1012,"Logo_url":"https://assets.leaguestat.com/pwhl/logos/2_5.png"},"geometry":{"type":"Point","coordinates":[-93.1012,44.94501]}},{"type":"Feature","properties":{"Team":"Montr\u00e9al Victoire","Stadium":"Place Bell","Latitude":45.55632,"Longitude":-73.72121,"Logo_url":"https://assets.leaguestat.com/pwhl/logos/3_5.png"},"geometry":{"type":"Point","coordinates":[-73.72121,45.55632]}},{"type":"Feature","properties":{"Team":"New York Sirens","Stadium":"Prudential Center","Latitude":40.7338,"Longitude":-74.17065,"Logo_url":"https://assets.leaguestat.com/pwhl/logos/4_5.png"},"geometry":{"type":"Point","coordinates":[-74.17065,40.7338]}},{"type":"Feature","properties":{"Team":"Ottawa Charge","Stadium":"TD Place Arena","Latitude":45.39854,"Longitude":-75.68353,"Logo_url":"https://assets.leaguestat.com/pwhl/logos/5_5.png"},"geometry":{"type":"Point","coordinates":[-75.68353,45.39854]}},{"type":"Feature","properties":{"Team":"Seattle Torrent","Stadium":"Climate Pledge Arena","Latitude":47.62231,"Longitude":-122.35357,"Logo_url":"https://upload.wikimedia.org/wikipedia/en/6/6c/Seattle_Torrent_logo.png"},"geometry":{"type":"Point","coordinates":[-122.35357,47.62231]}},{"type":"Feature","properties":{"Team":"Toronto Sceptres","Stadium":"Coca-Cola Coliseum","Latitude":43.63504,"Longitude":-79.41528,"Logo_url":"https://assets.leaguestat.com/pwhl/logos/6_5.png"},"geometry":{"type":"Point","coordinates":[-79.41528,43.63504]}},{"type":"Feature","properties":{"Team":"Vancouver Goldeneyes","Stadium":"Pacific Coliseum","Latitude":49.28596,"Longitude":-123.04269,"Logo_url":"https://upload.wikimedia.org/wikipedia/en/7/73/Vancouver_Goldeneyes_logo.png"},"geometry":{"type":"Point","coordinates":[-123.04269,49.28596]}}]};
+
+// ── CONFIG ────────────────────────────────────────────────────
+const DATA_JSON    = "pwhl_map_data.json";      // generated by R script
+const TEAMS_GEOJSON = "PWHL_table.geojson";     // your file
+
+const US_GEOJSON = "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json";
+const CA_GEOJSON = "https://raw.githubusercontent.com/codeforgermany/click_that_hood/main/public/data/canada.geojson";
+
+// Team name in GeoJSON → abbreviation used in JSON data
+const TEAM_TO_ABBR = {
+  "Boston Fleet":        "BOS",
+  "Minnesota Frost":     "MIN",
+  "Montr\u00e9al Victoire": "MTL",
+  "Montreal Victoire":   "MTL",
+  "New York Sirens":     "NYR",
+  "Ottawa Charge":       "OTT",
+  "Toronto Sceptres":    "TOR",
+  "Seattle Torrent":     "SEA",
+  "Vancouver Goldeneyes":"VAN"
+};
+
+// Official team colors  [primary, secondary]
+const TEAM_COLORS = {
+  BOS: ["#003087", "#c8102e"],   // navy, red
+  MIN: ["#154734", "#a2aaad"],   // forest green, silver
+  MTL: ["#862633", "#f0c244"],   // burgundy, gold
+  NYR: ["#003087", "#009cde"],   // navy, sky blue
+  OTT: ["#c8102e", "#ffffff"],   // red, white (changed from black for readability)
+  TOR: ["#3c1053", "#c9a84c"],   // purple, gold
+  SEA: ["#1a5e45", "#b8c4b0"],   // slate green, cream
+  VAN: ["#005b8e", "#c9a84c"]    // pacific blue, bronze
+};
+
+// Hardcoded jersey numbers from official PWHL rosters
+const JERSEY_NUMBERS = {
+  BOS: {"Sophie Shirley":9,"Alina Müller":11,"Alina Muller":11,"Liz Schepers":13,"Olivia Mobley":15,"Jessie Eldridge":18,"Abby Newhook":19,"Hannah Brandt":20,"Laura Kluge":25,"Ella Huber":26,"Shay Maloney":27,"Loren Gabel":36,"Jill Saulnier":44,"Jamie Lee Rattray":47,"Susanna Tapani":77,"Zoe Boyd":3,"Megan Keller":5,"Hadley Hartmetz":6,"Mia Biotti":7,"Haley Winn":8,"Riley Brengman":16,"Rylind MacKinnon":53,"Daniela Pejsova":55,"Daniela Pejšová":55,"Olivia Zafuto":73,"Noemi Neubauerova":81,"Noemi Neubauerová":81,"Amanda Thiele":30,"Aerin Frankel":31,"Abbey Levy":39,"Theresa Schafzahl":37},
+  MIN: {"Katy Knoll":6,"Claire Butorac":7,"Samantha Cogan":8,"Kelly Pannek":12,"Grace Zumwinkle":13,"Dominique Petrie":14,"Kaitlyn O'Donohoe":16,"Elizabeth Giguere":18,"Élizabeth Giguère":18,"Vanessa Upson":24,"Kendall Coyne Schofield":26,"Taylor Heise":27,"Klara Hymlárová":71,"Klára Hymlárová":71,"Abby Hustler":74,"Britta Curl-Salemme":77,"Peyton Anderson":91,"Lee Stecklein":2,"Kendall Cooper":4,"Sidney Morin":5,"Madison Bizal":9,"Brooke Becker":15,"Ava Rinker":17,"Mae Batherson":21,"Natalie Buchbinder":22,"Jincy Roese":33,"Marlene Boissonnault":1,"Marlène Boissonnault":1,"Nicole Hensley":29,"Maddie Rooney":35},
+  MTL: {"Maya Labad":4,"Samantha Isbell":5,"Laura Stacey":7,"Abby Roque":11,"Alexandra Labelle":13,"Claire Vekich":15,"Hayley Scamurra":16,"Dara Greig":17,"Kaitlin Willoughby":19,"Maureen Murphy":21,"Lina Ljungblom":25,"Shiann Darkangelo":27,"Catherine Dubois":28,"Marie-Philip Poulin":29,"Jade Downie-Landry":77,"Skylar Irving":88,"Natalie Mlynkova":96,"Natálie Mlýnková":96,"Kati Tabin":9,"Tamara Giaquinto":12,"Jessica DiGirolamo":22,"Erin Ambrose":23,"Amanda Boulier":44,"Kelly Ann Nadeau":51,"Nicole Gosling":61,"Maggie Flaherty":91,"Nadia Mattivi":93,"Megan Warrener":1,"Sandra Abstreiter":30,"Ann-Renée Desbiens":35,"Ann-Renee Desbiens":35},
+  NYR: {"Elle Hartje":4,"Savannah Norcross":7,"Sarah Fillier":10,"Taylor Girard":17,"Maddi Wheeler":18,"Paetyn Levis":19,"Anna Bargman":22,"Anne Cherkowski":24,"Casey O'Brien":26,"Emmy Fecteau":29,"Clair DeGeorge":41,"Kristin O'Neill":43,"Denisa Krizova":44,"Denisa Křǐžová":44,"Kira Juodikis":55,"Sarah Bujold":62,"Kayla Vespa":81,"Kristyna Kaltounková":98,"Kristýna Kaltounková":98,"Dayle Ross":2,"Maja Nylen Persson":8,"Maja Nylén Persson":8,"Olivia Knowles":9,"Nicole Vallario":11,"Jaime Bourbonnais":14,"Lauren Bernard":16,"Allyson Simpson":20,"Micah Zandee-Hart":28,"Callie Shanahan":37,"Kaley Doyle":39,"Kayle Osborne":82},
+  OTT: {"Alexa Vasko":10,"Olivia Wallin":14,"Reece Hunt":15,"Katerina Mrazova":16,"Kateřina Mrázová":16,"Gabbie Hughes":17,"Brianne Jenner":19,"Taylor House":22,"Sarah Wozniewicz":23,"Emily Clark":26,"Brooke McQuigge":27,"Peyton Hemp":29,"Rebecca Leslie":37,"Fanuza Kadirova":71,"Michela Cava":86,"Maggy Burbidge":94,"Jocelyne Larocque":3,"Rory Guilday":5,"Stephanie Markowski":6,"Kathryn Reilly":8,"Vita Poniatovskaia":9,"Brooke Hobson":11,"Emma Greco":25,"Alexie Guay":42,"Ronja Savolainen":88,"Sanni Ahola":1,"Kaitlyn Ross":32,"Gwyneth Philips":33,"Kendra Woodland":70},
+  TOR: {"Daryl Watts":9,"Kiara Zanon":11,"Anneke Rankila":13,"Lauren Messier":16,"Jesse Compher":18,"Sara Hjalmarsson":19,"Emma Gentry":20,"Kristin Della Rovere":21,"Maggie Connors":22,"Natalie Spooner":24,"Clara Van Wieren":25,"Emma Maltais":27,"Blayre Turnbull":40,"Claire Dalton":42,"Emma Woods":67,"Jessica Kondas":2,"Kali Flanagan":6,"Hannah Baskin":10,"Allie Munroe":12,"Renata Fast":14,"Savannah Harmon":15,"Ella Shelton":17,"Anna Kjellbin":71,"Raygan Kirk":1,"Elaine Chuli":29,"Jessie McPherson":91},
+  SEA: {"Lily Delianedis":7,"Natalie Snodgrass":8,"Jenna Buglioni":10,"Mikyla Grant-Mentis":13,"Brooke Bryant":17,"Hannah Bilka":19,"Hilary Knight":21,"Alex Carpenter":25,"Gabrielle David":28,"Theresa Schafzahl":37,"Jada Habisch":52,"Marah Wagner":66,"Sydney Langseth":71,"Lexie Adzija":78,"Julia Gosling":88,"Danielle Serdachny":92,"Aneta Tejralova":2,"Aneta Tejralová":2,"Cayla Barnes":3,"Anna Wilgren":5,"Emily Zumwinkle":6,"Emily Brown":11,"Mariah Keopple":20,"Lyndie Lobdell":24,"Megan Carter":27,"Corinne Schroeder":30,"Carly Jackson":70,"Hannah Murphy":83,"Jessie Eldridge":18},
+  VAN: {"Izzy Daniel":8,"Kaitlin Chan":9,"Jenn Gardiner":12,"Tereza Vanisova":13,"Tereza Vanišová":13,"Gabby Rosenthal":15,"Malia Schneider":18,"Mannon McMahon":19,"Sarah Nurse":20,"Abby Boreen":22,"Michelle Karvinen":33,"Hannah Miller":34,"Anna Segedi":51,"Darcie Lappan":72,"Anna Meixner":94,"Anna Shokhina":97,"Madison Samoskevich":7,"Maddy Samoskevich":7,"Sydney Bard":11,"Sophie Jaques":16,"Ashton Bell":21,"Mellissa Channell":23,"Mellissa Channell-Watkins":23,"Nina Jobst-Smith":28,"Claire Thompson":42,"Kimberly Newell":35,"Emerance Maschmeyer":38,"Kristen Campbell":50,"Michela Cava":86,"Brooke McQuigge":27,"Emma Greco":25}
+};
+
+// US state name → abbreviation
+const US_NAME_ABBR = {
+  "Alabama":"AL","Alaska":"AK","Arizona":"AZ","Arkansas":"AR","California":"CA",
+  "Colorado":"CO","Connecticut":"CT","Delaware":"DE","Florida":"FL","Georgia":"GA",
+  "Hawaii":"HI","Idaho":"ID","Illinois":"IL","Indiana":"IN","Iowa":"IA",
+  "Kansas":"KS","Kentucky":"KY","Louisiana":"LA","Maine":"ME","Maryland":"MD",
+  "Massachusetts":"MA","Michigan":"MI","Minnesota":"MN","Mississippi":"MS",
+  "Missouri":"MO","Montana":"MT","Nebraska":"NE","Nevada":"NV","New Hampshire":"NH",
+  "New Jersey":"NJ","New Mexico":"NM","New York":"NY","North Carolina":"NC",
+  "North Dakota":"ND","Ohio":"OH","Oklahoma":"OK","Oregon":"OR","Pennsylvania":"PA",
+  "Rhode Island":"RI","South Carolina":"SC","South Dakota":"SD","Tennessee":"TN",
+  "Texas":"TX","Utah":"UT","Vermont":"VT","Virginia":"VA","Washington":"WA",
+  "West Virginia":"WV","Wisconsin":"WI","Wyoming":"WY","District of Columbia":"DC"
+};
+
+// Canada province name → abbreviation
+const CA_NAME_ABBR = {
+  "Alberta":"AB","British Columbia":"BC","Manitoba":"MB","New Brunswick":"NB",
+  "Newfoundland and Labrador":"NL","Newfoundland":"NL","Nova Scotia":"NS",
+  "Ontario":"ON","Prince Edward Island":"PE","Quebec":"QC","Saskatchewan":"SK",
+  "Northwest Territories":"NT","Nunavut":"NU","Yukon":"YT"
+};
+
+// ── MAP INIT ──────────────────────────────────────────────────
+const map = L.map('map', { center:[49,-95], zoom:4 });
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution:'© CARTO | PWHL Data via fastRhockey',
+  subdomains:'abcd', maxZoom:19
+}).addTo(map);
+
+// ── COLOUR SCALE — fixed stepped breaks ───────────────────────
+// 7 visually distinct classes, not tied to globalMax
+const COLOR_BREAKS = [
+  { min: 0,  max: 0,  color: '#3d4455', label: '0 — No players' },
+  { min: 1,  max: 1,  color: '#c6dff0', label: '1 player' },
+  { min: 2,  max: 3,  color: '#7db8e0', label: '2–3 players' },
+  { min: 4,  max: 5,  color: '#3a8bbf', label: '4–5 players' },
+  { min: 6,  max: 9,  color: '#1a5f8a', label: '6–9 players' },
+  { min: 10, max: 14, color: '#0d3a5c', label: '10–14 players' },
+  { min: 15, max: Infinity, color: '#051c30', label: '15+ players' }
+];
+
+function regionColor(count) {
+  if (!count || count === 0) return '#000000';
+  for (let i = COLOR_BREAKS.length - 1; i >= 0; i--) {
+    if (count >= COLOR_BREAKS[i].min) return COLOR_BREAKS[i].color;
+  }
+  return '#000000';
+}
+
+let pwhlData = null;
+let globalMax = 5;
+
+// ── CHOROPLETH ────────────────────────────────────────────────
+function makeChoropleth(geojsonData, type) {
+  // type = "us" or "ca"
+  const counts  = type === "us" ? pwhlData.origins.us_states : pwhlData.origins.ca_provinces;
+  const nameMap = type === "us" ? US_NAME_ABBR : CA_NAME_ABBR;
+
+  return L.geoJSON(geojsonData, {
+    style: feat => {
+      const rawName = feat.properties.name || feat.properties.NAME ||
+                      feat.properties.province || feat.properties.PRENAME || "";
+      const abbr  = nameMap[rawName] || rawName.toUpperCase().slice(0,2);
+      const count = (counts && counts[abbr]) ? counts[abbr] : 0;
+      return {
+        fillColor:   regionColor(count),
+        fillOpacity: count > 0 ? 0.82 : 0.04,
+        color:       '#444',
+        weight:      0.7
+      };
+    },
+    onEachFeature: (feat, layer) => {
+      const rawName = feat.properties.name || feat.properties.NAME ||
+                      feat.properties.province || feat.properties.PRENAME || "";
+      const abbr  = nameMap[rawName] || rawName.toUpperCase().slice(0,2);
+      const count = (counts && counts[abbr]) ? counts[abbr] : 0;
+      layer.bindTooltip(
+        `<b>${rawName}</b><br/>${count > 0 ? count + " PWHL player" + (count>1?"s":"") : "No PWHL players"}`,
+        { sticky: true }
+      );
+    }
+  });
+}
+
+// ── TEAM MARKERS ─────────────────────────────────────────────
+function makeMarker(feature) {
+  const { Team, Stadium, Logo_url } = feature.properties;
+  const [lng, lat] = feature.geometry.coordinates;
+  const abbr = TEAM_TO_ABBR[Team] || "";
+  const colors = TEAM_COLORS[abbr] || ["#4a2d8a", "#8b7cf6"];
+  const primary = colors[0];
+  const secondary = colors[1];
+
+  const icon = L.divIcon({
+    className: '',
+    html: `<div class="pwhl-marker" style="width:50px;height:50px;border-color:${primary};box-shadow:0 3px 12px ${primary}99;">
+             <img src="${Logo_url}" alt="${Team}"
+               onerror="this.src='https://www.thepwhl.com/favicon.ico'"/>
+           </div>`,
+    iconSize:   [50, 50],
+    iconAnchor: [25, 25],
+    popupAnchor:[0, -30]
+  });
+
+  const marker = L.marker([lat, lng], { icon });
+  marker.bindPopup(() => buildPopup(abbr, Team, Stadium, Logo_url), {
+    maxWidth: 450, minWidth: 430
+  });
+  return marker;
+}
+
+// ── POPUP CONTENT ─────────────────────────────────────────────
+function buildPopup(abbr, teamName, stadium, logo) {
+  const td = pwhlData && pwhlData.teams ? pwhlData.teams[abbr] : null;
+  const colors = TEAM_COLORS[abbr] || ["#1a1a2e", "#4a4a8a"];
+  const primary = colors[0];
+  const secondary = colors[1];
+
+  // Helper: get jersey number — JS lookup first, then JSON field
+  const getJersey = (p) => {
+    const lookup = JERSEY_NUMBERS[abbr] || {};
+    return lookup[p.name] ?? p.jersey ?? null;
+  };
+
+  if (!td) {
+    return `<div class="team-popup">
+      <div class="popup-header" style="background:linear-gradient(135deg,${primary}ee,${primary}99);">
+        <img src="${logo}" alt="${teamName}"/>
+        <div><div class="team-name">${teamName}</div>
+        <div class="team-meta">${stadium}</div></div>
+      </div>
+      <div class="popup-body"><p style="color:#888;font-size:0.8rem;padding:10px 0;">
+        Run the R script to load player data.</p></div>
+    </div>`;
+  }
+
+  const W   = td.wins   != null ? td.wins   : "–";
+  const L   = td.losses != null ? td.losses : "–";
+  const OTL = td.otl    != null ? td.otl    : "–";
+
+  const gm   = td.coaches?.gm   || "";
+  const head = td.coaches?.head || "TBD";
+  const asst = (td.coaches?.assistants || []).join(", ") || "TBD";
+
+  // SEA and VAN were established in 2025
+  const estYear = (abbr === "SEA" || abbr === "VAN") ? "2025" : "2024";
+
+  // For dark primary colors (like Ottawa red #c8102e), ensure text is readable
+  const textOnPrimary = "#ffffff";
+
+  const allNA   = td.players     || [];
+  const allIntl = td.intl_players || [];
+  const skaters = allNA.filter(p => !p.is_goalie);
+  const goalies = allNA.filter(p => p.is_goalie);
+
+  const playerRow = p => {
+    const gp    = p.games_played != null ? p.games_played : "–";
+    const stat  = p.is_goalie
+      ? (p.save_pct != null ? "." + String(Math.round(p.save_pct * 1000)).padStart(3,"0") : "–")
+      : (p.goals    != null ? p.goals : "–");
+    const pos   = p.is_goalie ? `<span class="g-badge" style="background:${primary}33;color:${secondary};"">G</span>` : (p.position || "–");
+    const num   = getJersey(p);
+    return `<tr>
+      <td style="color:${secondary};font-weight:700;">${num != null ? num : "–"}</td>
+      <td>${p.name || "–"}</td>
+      <td>${pos}</td>
+      <td>${p.dob || "–"}</td>
+      <td>${p.hometown || "–"}</td>
+      <td>${gp}</td>
+      <td>${stat}</td>
+    </tr>`;
+  };
+
+  const allRows = [...skaters, ...goalies].map(playerRow).join("") ||
+    `<tr><td colspan="7" style="color:#555;text-align:center;padding:8px;">No player data — run R script</td></tr>`;
+
+  let intlSection = "";
+  if (allIntl.length > 0) {
+    const intlRows = allIntl.map(p => {
+      const num = getJersey(p);
+      return `<tr>
+        <td style="color:${secondary};font-weight:700;">${num != null ? num : "–"}</td>
+        <td>${p.name || "–"}</td>
+        <td>${p.position || "–"}</td>
+        <td>${p.hometown || "–"}</td>
+        <td>${p.games_played != null ? p.games_played : "–"}</td>
+        <td>${p.is_goalie && p.save_pct != null
+              ? "." + String(Math.round(p.save_pct*1000)).padStart(3,"0")
+              : (p.goals != null ? p.goals : "–")}</td>
+      </tr>`;
+    }).join("");
+    intlSection = `
+      <div class="section-title" style="color:${secondary};">International Players</div>
+      <div class="intl-box" style="border-color:${primary}55;">
+        <div class="intl-title">Players from outside USA &amp; Canada</div>
+        <table class="player-table">
+          <thead><tr><th>#</th><th>Name</th><th>Pos</th><th>From</th><th>GP</th><th>G/SV%</th></tr></thead>
+          <tbody>${intlRows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  return `<div class="team-popup" style="--team-primary:${primary};--team-secondary:${secondary};">
+    <div class="popup-header" style="background:linear-gradient(135deg,${primary},${primary}bb);border-bottom:2px solid ${secondary}44;">
+      <img src="${logo}" alt="${teamName}"/>
+      <div>
+        <div class="team-name" style="color:#ffffff;">${teamName}</div>
+        <div class="team-meta" style="color:rgba(255,255,255,0.8);">${stadium} &nbsp;|&nbsp; Est. ${estYear}</div>
+      </div>
+    </div>
+    <div class="popup-body">
+      <div class="record-row">
+        <div class="stat-pill" style="border-color:${primary}88;">
+          <div class="num" style="color:${secondary};">${W}</div><div class="lbl">Wins</div></div>
+        <div class="stat-pill" style="border-color:${primary}88;">
+          <div class="num" style="color:${secondary};">${L}</div><div class="lbl">Losses</div></div>
+        <div class="stat-pill" style="border-color:${primary}88;">
+          <div class="num" style="color:${secondary};">${OTL}</div><div class="lbl">OT Losses</div></div>
+      </div>
+      <div class="section-title" style="color:${secondary};border-color:${primary}44;">Coaching Staff</div>
+      <div class="coaches-list">
+        ${gm ? `<strong>General Manager:</strong> ${gm}<br/>` : ""}
+        <strong>Head Coach:</strong> ${head}<br/>
+        <strong>Assistants:</strong> ${asst}
+      </div>
+      <div class="section-title" style="color:${secondary};border-color:${primary}44;">Roster — 2025–26</div>
+      <table class="player-table">
+        <thead style="--th-color:${secondary};"><tr>
+          <th style="color:${secondary};">#</th>
+          <th style="color:${secondary};">Name</th>
+          <th style="color:${secondary};">Pos</th>
+          <th style="color:${secondary};">DOB</th>
+          <th style="color:${secondary};">Hometown</th>
+          <th style="color:${secondary};">GP</th>
+          <th style="color:${secondary};">G / SV%</th>
+        </tr></thead>
+        <tbody>${allRows}</tbody>
+      </table>
+      ${intlSection}
+    </div>
+  </div>`;
+}
+
+// ── LEGEND ────────────────────────────────────────────────────
+function addLegend() {
+  const ctrl = L.control({ position: 'bottomright' });
+  ctrl.onAdd = () => {
+    const div = L.DomUtil.create('div', 'legend');
+    div.innerHTML = '<h4>Players by Origin</h4>';
+    COLOR_BREAKS.forEach(b => {
+      div.innerHTML += `<div class="legend-row">
+        <div class="legend-swatch" style="background:${b.color};border:1px solid rgba(255,255,255,0.18);"></div>
+        <span>${b.label}</span>
+      </div>`;
+    });
+    return div;
+  };
+  ctrl.addTo(map);
+}
+
+// ── MAIN (standalone — all data inline, no fetch needed) ──────
+async function init() {
+  try {
+    // 1. Use inline PWHL data — no fetch needed
+    pwhlData = PWHL_DATA_INLINE;
+
+    // Compute global max for colour scale
+    const allVals = [
+      ...Object.values(pwhlData.origins.us_states   || {}),
+      ...Object.values(pwhlData.origins.ca_provinces || {})
+    ].filter(Number.isFinite);
+    globalMax = allVals.length ? Math.max(...allVals) : 5;
+
+    // 2. Load US + Canada boundary GeoJSON from CDN (needs internet for basemap tiles anyway)
+    //    Team GeoJSON is fully inline — no fetch needed
+    const [usRes, caRes] = await Promise.all([
+      fetch(US_GEOJSON),
+      fetch(CA_GEOJSON)
+    ]);
+
+    const [usGeo, caGeo] = await Promise.all([usRes.json(), caRes.json()]);
+
+    // 3. Choropleth layers
+    makeChoropleth(usGeo, "us").addTo(map);
+    makeChoropleth(caGeo, "ca").addTo(map);
+
+    // 4. Team markers — use inline GeoJSON
+    (TEAM_GEOJSON_INLINE.features || []).forEach(f => {
+      if (f.geometry?.type === "Point") makeMarker(f).addTo(map);
+    });
+
+    // 5. Legend
+    addLegend();
+
+    document.getElementById('loading').style.display = 'none';
+
+  } catch(err) {
+    // Even if CDN borders fail, still show team markers with inline data
+    try {
+      pwhlData = PWHL_DATA_INLINE;
+      (TEAM_GEOJSON_INLINE.features || []).forEach(f => {
+        if (f.geometry?.type === "Point") makeMarker(f).addTo(map);
+      });
+      addLegend();
+    } catch(e2) {}
+    document.getElementById('loading').style.display = 'none';
+    console.warn("Could not load boundary GeoJSON (no internet?) — team markers still work.", err.message);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
